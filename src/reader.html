@@ -271,11 +271,14 @@
 
   /* ── Modale ───────────────────────────────────────────────── */
   .modal{position:fixed; inset:0; background:rgba(36,28,46,.4); display:none;
-    align-items:center; justify-content:center; z-index:60; padding:24px; backdrop-filter:blur(3px)}
+    align-items:center; justify-content:center; z-index:60; backdrop-filter:blur(3px);
+    padding:max(20px,env(safe-area-inset-top)) 18px max(20px,env(safe-area-inset-bottom))}
   .modal.show{display:flex; animation:fade .3s both}
   .modal .box{max-width:380px; width:100%; text-align:center; background:var(--surface);
     border:1px solid var(--line); border-radius:18px; padding:28px 24px;
     box-shadow:0 24px 60px rgba(36,28,46,.22);
+    max-height:88dvh; max-height:88vh; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    overscroll-behavior:contain;
     animation:reveal .35s cubic-bezier(.2,.8,.2,1) both}
   .modal .box h2{font-family:var(--serif); font-weight:500; margin:.15em 0 .45em; color:var(--ink)}
   .modal .box p{color:var(--ink-soft); line-height:1.6}
