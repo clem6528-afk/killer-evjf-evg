@@ -97,9 +97,10 @@ publier** si une donnée de jeu fuite dans `docs/index.html`.
 
 Produit :
 - `docs/index.html` — l'appli (à déployer).
-- `out/cartes/carte_<Nom>.html` — **une carte autonome par joueur** (QR intégré en base64, nom + code).
-  Chaque fichier est indépendant : tu peux l'**envoyer/imprimer individuellement** sans exposer les
-  autres joueurs. `out/cartes/_index.txt` liste qui correspond à quel fichier.
+- `out/cartes/carte_<Nom>.pdf` **et** `.html` — **une carte autonome par joueur** (QR intégré,
+  nom + code). Format A6, prêt à imprimer ou à **envoyer individuellement** sans exposer les autres
+  joueurs. `out/cartes/_index.txt` liste qui correspond à quel fichier.
+- `out/cartes_killer.pdf` — **PDF combiné** (1 carte par page) si tu préfères tout imprimer d'un coup.
 - `out/cards.html` — variante « planche unique » (tous les joueurs sur une page à découper).
 - `out/qr/*.png` — les QR individuels (images seules).
 - `out/host_sheet.md` — **ta feuille maître secrète** (qui vise qui, missions, codes, liens).

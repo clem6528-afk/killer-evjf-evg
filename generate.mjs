@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import QRCode from 'qrcode';
+import PDFDocument from 'pdfkit';
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
 const p = (...x) => path.join(ROOT, ...x);
@@ -175,6 +176,53 @@ for (const { pl, qrData, roleTag } of rows) {
 fs.writeFileSync(p('out', 'cartes', '_index.txt'),
   'Cartes individuelles (1 fichier autonome par joueur) :\n\n' + cardIndex.join('\n') + '\n', 'utf8');
 
+// ───────── Mêmes cartes en PDF (1 PDF autonome par joueur + 1 PDF combiné) ─────────
+function drawCard(doc, pl, qrData, roleLabel) {
+  const pw = doc.page.width, m = 28, cw = pw - 2 * m;
+  const qrBuf = Buffer.from(qrData.split(',')[1], 'base64');
+  doc.rect(0, 0, pw, 8).fill('#b3122e');
+  let y = 36;
+  doc.fillColor('#a9863a').font('Helvetica-Bold').fontSize(8.5)
+     .text(roleLabel + '  ·  KILLER EVJF/EVG', m, y, { width: cw, align: 'center', characterSpacing: 1.5 });
+  y += 24;
+  doc.fillColor('#241c2e').font('Helvetica-Bold').fontSize(25)
+     .text(pl.name, m, y, { width: cw, align: 'center' });
+  y = doc.y + 12;
+  const qs = 160;
+  doc.image(qrBuf, (pw - qs) / 2, y, { width: qs, height: qs });
+  y += qs + 14;
+  doc.fillColor('#938a9e').font('Helvetica').fontSize(8)
+     .text('TON CODE SECRET', m, y, { width: cw, align: 'center', characterSpacing: 2 });
+  y += 13;
+  doc.fillColor('#241c2e').font('Helvetica-Bold').fontSize(21)
+     .text(pl.code, m, y, { width: cw, align: 'center', characterSpacing: 2 });
+  y = doc.y + 12;
+  doc.fillColor('#5a5064').font('Helvetica').fontSize(9)
+     .text('Scanne ce QR (ou ouvre ton lien perso), puis entre ton code pour découvrir ta cible.',
+       m, y, { width: cw, align: 'center', lineGap: 2 });
+  y = doc.y + 8;
+  doc.fillColor('#b3122e').font('Helvetica-Bold').fontSize(8)
+     .text('Garde ta carte pour toi — ne montre ton code à personne.', m, y, { width: cw, align: 'center' });
+}
+function renderPdf(filePath, drawFn) {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: 'A6', margins: { top: 0, bottom: 24, left: 28, right: 28 } });
+    const ws = fs.createWriteStream(filePath);
+    doc.pipe(ws);
+    drawFn(doc);
+    doc.end();
+    ws.on('finish', resolve);
+    ws.on('error', reject);
+  });
+}
+const pdfRole = pl => pl.role === 'marie' ? 'CIBLE VIP' : 'TUEUR';
+for (const { pl, qrData } of rows) {
+  await renderPdf(p('out', 'cartes', `carte_${slug(pl.name)}.pdf`), doc => drawCard(doc, pl, qrData, pdfRole(pl)));
+}
+await renderPdf(p('out', 'cartes_killer.pdf'), doc => {
+  rows.forEach((r, i) => { if (i) doc.addPage(); drawCard(doc, r.pl, r.qrData, pdfRole(r.pl)); });
+});
+
 // ───────── out/host_sheet.md (feuille maître — JAMAIS publiée) ─────────
 let sheet = `# 🔪 Feuille maître — ${cfg.meta.title}\n\n`;
 sheet += `> ⚠️ SECRET ORGANISATEUR. Ne jamais montrer ni publier ce fichier.\n\n`;
@@ -219,6 +267,7 @@ if (leak) { console.error('\n❌ FUITE : une donnée de jeu apparaît dans docs/
 
 console.log(`\n${failures ? '⚠️  ' + failures + ' échec(s) crypto' : '✅ crypto OK (round-trip + rejet mauvais code)'}`);
 console.log('✅ docs/index.html (lecteur sans données)');
+console.log('✅ out/cartes/*.pdf + *.html (1 par joueur) · out/cartes_killer.pdf (combiné)');
 console.log('✅ out/cards.html · out/qr/*.png · out/host_sheet.md');
 console.log(`\nBase URL utilisée : ${BASE}`);
 if (BASE.includes('clem6528-afk')) console.log('→ lié au compte GitHub clem6528-afk');
