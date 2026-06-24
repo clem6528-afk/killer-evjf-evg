@@ -258,6 +258,7 @@ reader = reader
   .replaceAll('__BASEURL__', BASE)
   .replaceAll('__GAMEID__', cfg.meta.gameId || 'game')
   .replaceAll('__SCORING__', JSON.stringify(cfg.meta.scoring || {}))
+  .replaceAll('__VIPPOOL__', JSON.stringify(cfg.meta.vipPool || []))
   .replaceAll('__ROSTER__', JSON.stringify(roster))
   .replaceAll('__FIREBASE_CONFIG__', JSON.stringify(firebaseEnabled ? firebaseCfg : null))
   .replaceAll('__RULES_HTML__', cfg.rulesHtml);

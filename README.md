@@ -49,7 +49,8 @@ ses actions, et le **classement live**.
   (ou conteste). À la confirmation, la cible de X est **transmise au tueur, chiffrée de bout en
   bout (ECDH P-256)** — la base ne voit jamais qui chasse qui. Le tueur gagne **+100** et hérite.
 - **Défi marié** : n'importe qui (même éliminé !) tape « défi marié réussi » → choisit Camille/Alex
-  → le marié **valide** (+40) ou refuse = **GRILLÉ** (+20 pour le marié).
+  → le marié **valide** (+40) ou refuse = **GRILLÉ** (+20 pour le marié). **Chaque défi validé en
+  débloque un nouveau** (défi perso puis pool `meta.vipPool`) → de quoi marquer toute la partie.
 - **Mission secrète des mariés** : le marié la réalise puis **choisit un témoin** parmi les joueurs ;
   le témoin atteste depuis son espace (+50). **Aucune action de l'orga requise pendant le jeu.**
 - **Dernier survivant** : **+150 attribué automatiquement** quand la chaîne se referme sur une

@@ -392,7 +392,7 @@
       <div class="block"><div class="k">🔪 Pour l'éliminer <span class="pts">+100 pts</span></div>
         <div class="v"><em>Ta mission secrète s'affichera ici</em> : un petit défi à faire accomplir à ta cible sans qu'elle s'en doute.</div></div>
       <div class="block vipblock"><div class="k">⭐ Défi marié <span class="pts gold">+40 pts</span></div>
-        <div class="v"><em>Ton défi bonus</em> pour piéger l'un·e des marié·e·s pendant le week-end.</div></div>
+        <div class="v"><em>Ton défi bonus</em> pour piéger l'un·e des marié·e·s. Une fois validé, d'autres défis se débloquent un par un !</div></div>
     </div>
 
     <div class="panel">
@@ -429,6 +429,7 @@ const ITER = __ITER__;
 const HOSTCODE = "__HOSTCODE__";
 const GAMEID = "__GAMEID__";
 const SCORING = __SCORING__;
+const VIPPOOL = __VIPPOOL__;                 // défis mariés débloqués après le défi perso
 const ROSTER = __ROSTER__;                   // [{pid,name,role}]
 const FIREBASE_CONFIG = __FIREBASE_CONFIG__; // objet ou null (mode hors-ligne)
 const MARIES = ROSTER.filter(r => r.role === 'marie');
@@ -469,6 +470,15 @@ function getPayload(){ const h=location.hash.replace(/^#/,'').trim(); return h.l
 const lsKey = pid => 'mecard_'+GAMEID+'_'+pid;
 function saveMe(){ try{ localStorage.setItem(lsKey(state.me.pid), JSON.stringify({...state.me, epoch:state.epoch})); }catch(e){} }
 function loadMe(pid){ try{ const v=localStorage.getItem(lsKey(pid)); return v?JSON.parse(v):null; }catch(e){ return null; } }
+function vipDoneCount(){ const p=state.players[state.me.pid]; return (p&&p.vipDone)||0; }
+function currentVipDefi(){
+  const done=vipDoneCount();
+  if(done===0) return ((state.me.vip||'').replace(/^Mission VIP\s*:\s*/i,''))||null;
+  const idx=done-1; return idx<VIPPOOL.length ? VIPPOOL[idx] : null;
+}
+function hasPendingKill(){ return Object.values(state.killAll).some(c=>c.killerId===state.me.pid && c.status==='pending'); }
+function hasPendingVip(){ return Object.values(state.vipAll).some(c=>c.playerId===state.me.pid && c.status==='pending'); }
+function hasPendingSecret(){ return Object.values(state.secretAll).some(c=>c.playerId===state.me.pid && c.status==='pending'); }
 
 /* ════════ Firebase ════════ */
 async function initFirebase(){
@@ -540,7 +550,7 @@ function renderSpace(){
       <div class="target">${dead?'—':escapeHtml(m.target)}</div>
       <div class="cf-rule"></div>
       <div class="block"><div class="k">🔪 Pour l’éliminer <span class="pts">+${SCORING.kill} pts</span></div><div class="v">${dead?'Tu as été éliminé·e : plus de cible. Mais continue les défis mariés !':escapeHtml(m.mission)}</div></div>
-      <div class="block vipblock"><div class="k">⭐ Défi marié <span class="pts gold">+${SCORING.vip} pts</span></div><div class="v">${escapeHtml((m.vip||'').replace(/^Mission VIP\s*:\s*/i,''))}</div></div>
+      <div class="block vipblock"><div class="k">⭐ Défi marié <span class="pts gold">+${SCORING.vip} pts</span></div><div class="v">${(()=>{const d=currentVipDefi();return d?escapeHtml(d):'🎉 Tous les défis mariés réussis, bravo !';})()}</div></div>
     </div>`;
   }
 }
@@ -550,6 +560,8 @@ function renderActions(){
   if(m.role==='marie'){
     if(state.me.secretDone){
       wrap.appendChild(el('div','notice','✅ Ta mission secrète a été validée (+'+SCORING.secret+' pts).'));
+    } else if(hasPendingSecret()){
+      const b=el('button','btn-act btn-vip','⏳ En attente de ton témoin'); b.disabled=true; wrap.appendChild(b);
     } else {
       const sec=el('button','btn-act btn-vip','🤫 J’ai réussi ma mission secrète'); sec.onclick=()=>chooseWitnessThenClaimSecret();
       wrap.appendChild(sec);
@@ -557,11 +569,14 @@ function renderActions(){
     wrap.appendChild(el('div','notice','Pour ta mission secrète, choisis un témoin présent qui l’a vue : il valide → +'+SCORING.secret+'. Et ci-dessous, valide les défis que les invités prétendent avoir réussis sur toi (refuser = « GRILLÉ ! », +'+SCORING.grille+' pts pour toi).'));
   } else {
     if(m.alive!==false && m.targetPid && m.targetPid!==m.pid){
-      const k=el('button','btn-act btn-kill','🔪 J’ai éliminé '+escapeHtml(m.target)); k.onclick=()=>initiateKill(k); wrap.appendChild(k);
+      if(hasPendingKill()){ const b=el('button','btn-act btn-kill','⏳ Kill en attente de confirmation'); b.disabled=true; wrap.appendChild(b); }
+      else { const k=el('button','btn-act btn-kill','🔪 J’ai éliminé '+escapeHtml(m.target)); k.onclick=()=>initiateKill(k); wrap.appendChild(k); }
     } else if(m.targetPid===m.pid){
       wrap.appendChild(el('div','notice','🏆 Ta cible, c’est toi : tu es le dernier survivant en lice !'));
     }
-    const v=el('button','btn-act btn-vip','⭐ J’ai réussi mon défi marié'); v.onclick=()=>chooseMarieThenClaimVip(v); wrap.appendChild(v);
+    if(hasPendingVip()){ const b=el('button','btn-act btn-vip','⏳ Défi marié en attente de validation'); b.disabled=true; wrap.appendChild(b); }
+    else if(currentVipDefi()){ const v=el('button','btn-act btn-vip','⭐ J’ai réussi mon défi marié'); v.onclick=()=>chooseMarieThenClaimVip(v); wrap.appendChild(v); }
+    else { wrap.appendChild(el('div','notice','🎉 Tu as réussi tous les défis mariés. Chapeau !')); }
   }
   a.appendChild(wrap);
 }
@@ -578,15 +593,16 @@ function attachListeners(){
     state.epochSeen=e;
   });
   onValue(pref('players'), s=>{ state.players=s.val()||{}; renderLeaderboard('#leaderboard'); syncMyStatus(); });
-  onValue(pref('killClaims'), s=>{ state.killAll=s.val()||{}; processMyKills(); renderInbox(); });
-  onValue(pref('vipClaims'), s=>{ state.vipAll=s.val()||{}; processMyVipFeedback(); renderInbox(); });
-  onValue(pref('secretClaims'), s=>{ state.secretAll=s.val()||{}; processMySecretFeedback(); renderInbox(); });
+  onValue(pref('killClaims'), s=>{ state.killAll=s.val()||{}; processMyKills(); renderInbox(); renderActions(); });
+  onValue(pref('vipClaims'), s=>{ state.vipAll=s.val()||{}; processMyVipFeedback(); renderInbox(); renderActions(); });
+  onValue(pref('secretClaims'), s=>{ state.secretAll=s.val()||{}; processMySecretFeedback(); renderInbox(); renderActions(); });
 }
 function syncMyStatus(){
   const p=state.players[state.me.pid]; if(!p) return;
   let changed=false;
   if(p.alive===false && state.me.alive!==false){ state.me.alive=false; changed=true; }
   if(p.secretDone && !state.me.secretDone){ state.me.secretDone=true; changed=true; }
+  if((p.vipDone||0)!==(state.me._vipDone||0)){ state.me._vipDone=p.vipDone||0; changed=true; }
   if(changed){ saveMe(); renderSpace(); renderActions(); }
 }
 
@@ -698,9 +714,10 @@ function chooseMarieThenClaimVip(){
   $('#modalBox').querySelector('[data-close]').onclick=closeModal;
 }
 async function claimVip(marieId){
+  const defi=currentVipDefi(); if(!defi){ toast('Aucun défi marié en cours.'); return; }
+  if(hasPendingVip()){ toast('Tu as déjà un défi en attente.'); return; }
   const { push, set }=state.fb; const ref=push(pref('vipClaims'));
-  await set(ref, { playerId:state.me.pid, playerName:state.me.name, marieId,
-    text:((state.me.vip||'').replace(/^Mission VIP\s*:\s*/i,''))||'(défi marié)', status:'pending', ts:Date.now() });
+  await set(ref, { playerId:state.me.pid, playerName:state.me.name, marieId, text:defi, status:'pending', ts:Date.now() });
   toast('Validation demandée au marié. Attends son OK.');
 }
 function processMyVipFeedback(){
@@ -713,7 +730,7 @@ function processMyVipFeedback(){
 }
 async function validateVip(id,c,btn,ok){
   const { update, increment }=state.fb; btn.disabled=true;
-  if(ok){ await update(pref('vipClaims/'+id),{status:'validated'}); await update(pref('players/'+c.playerId),{points:increment(SCORING.vip)}); toast('Validé. +'+SCORING.vip+' pour '+c.playerName); }
+  if(ok){ await update(pref('vipClaims/'+id),{status:'validated'}); await update(pref('players/'+c.playerId),{points:increment(SCORING.vip), vipDone:increment(1)}); toast('Validé. +'+SCORING.vip+' pour '+c.playerName); }
   else { await update(pref('vipClaims/'+id),{status:'refused'}); await update(pref('players/'+state.me.pid),{points:increment(SCORING.grille)}); toast('GRILLÉ ! +'+SCORING.grille+' pour toi 😎'); }
 }
 
@@ -777,7 +794,7 @@ async function resetGame(btn){
   if(!confirm('Réinitialiser TOUTE la partie (scores, kills, statuts) ?')) return;
   btn.disabled=true;
   const { set }=state.fb;
-  const seed={}; ROSTER.forEach(r=>{ seed[r.pid]={name:r.name, role:r.role, alive:true, kills:0, points:0}; });
+  const seed={}; ROSTER.forEach(r=>{ seed[r.pid]={name:r.name, role:r.role, alive:true, kills:0, points:0, vipDone:0}; });
   await set(pref('players'), seed);
   await set(pref('killClaims'), null);
   await set(pref('vipClaims'), null);
