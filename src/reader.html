@@ -317,6 +317,7 @@
     <div class="panel">
       <p class="lead">Pour rejoindre <strong>ton espace</strong>, ouvre <strong>ton lien personnel</strong>
       ou scanne <strong>ton QR code</strong> remis par l'organisateur, puis entre ton code.</p>
+      <button class="ghost" data-demo>👁️ Voir un exemple d'espace</button>
       <button class="ghost" data-rules>📜 Lire les règles</button>
       <button class="ghost" data-host-ask>🎩 Espace organisateur</button>
     </div>
@@ -371,6 +372,47 @@
       <div class="rulesContent">__RULES_HTML__</div>
     </details>
     <button class="ghost" id="hostBack">← Retour</button>
+  </section>
+
+  <!-- ════════ Témoin / aperçu (données fictives) ════════ -->
+  <section id="demo" class="screen">
+    <div class="hd">
+      <div><div class="who">Aperçu · données fictives</div>
+        <div style="font-family:var(--serif);font-weight:500;font-size:1.5rem;line-height:1.1">Toi 🎭</div></div>
+      <span class="pill alive">● en vie</span>
+    </div>
+    <div class="notice" style="margin-top:0;margin-bottom:14px">👁️ Voici à quoi ressemblera <strong>ton espace</strong>. Tout est <strong>fictif</strong> ici — ta vraie cible, ta mission et les vrais noms n'apparaîtront qu'avec <strong>ton lien + ton code</strong>.</div>
+
+    <div class="panel cardface kill">
+      <span class="corner tl">🔪</span><span class="corner br">🔪</span>
+      <div class="cf-head"><span class="badge kill">☠️ Contrat actif</span></div>
+      <div class="who">Ta cible</div>
+      <div class="target">█████ 🎭</div>
+      <div class="cf-rule"></div>
+      <div class="block"><div class="k">🔪 Pour l'éliminer <span class="pts">+100 pts</span></div>
+        <div class="v"><em>Ta mission secrète s'affichera ici</em> : un petit défi à faire accomplir à ta cible sans qu'elle s'en doute.</div></div>
+      <div class="block vipblock"><div class="k">⭐ Défi marié <span class="pts gold">+40 pts</span></div>
+        <div class="v"><em>Ton défi bonus</em> pour piéger l'un·e des marié·e·s pendant le week-end.</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="who">Tes actions</div>
+      <button class="btn-act btn-kill" data-demo-btn>🔪 J'ai éliminé ma cible</button>
+      <button class="btn-act btn-vip" data-demo-btn>⭐ J'ai réussi mon défi marié</button>
+      <div class="notice">Quand tu réussis un kill, ta cible confirme sur SON téléphone, puis tu hérites de sa cible. <em>(Aperçu — boutons inactifs ici.)</em></div>
+    </div>
+
+    <div class="panel">
+      <h2 class="sec" style="margin-top:0">🏆 Classement</h2>
+      <div class="lb">
+        <div class="lb-row"><div class="lb-rank">🥇</div><div class="lb-name">Invité·e mystère</div><div class="lb-pts">240<span class="lb-kills"> · 2🔪</span></div></div>
+        <div class="lb-row me"><div class="lb-rank">🥈</div><div class="lb-name">Toi 🎭</div><div class="lb-pts">180<span class="lb-kills"> · 1🔪</span></div></div>
+        <div class="lb-row"><div class="lb-rank">🥉</div><div class="lb-name">Quelqu'un·e</div><div class="lb-pts">140<span class="lb-kills"> · 1🔪</span></div></div>
+        <div class="lb-row"><div class="lb-rank">4</div><div class="lb-name gone">💀 Première victime</div><div class="lb-pts">90<span class="lb-kills"> · 0🔪</span></div></div>
+      </div>
+    </div>
+
+    <button class="ghost" id="demoBack">← Retour à l'accueil</button>
   </section>
 
 </div>
@@ -747,6 +789,9 @@ document.querySelectorAll('[data-logo]').forEach(e=>e.addEventListener('click',b
 document.querySelectorAll('[data-rules]').forEach(e=>e.addEventListener('click',openRules));
 document.querySelectorAll('[data-host-ask]').forEach(e=>e.addEventListener('click',askHost));
 document.querySelectorAll('[data-taunt]').forEach(e=>e.addEventListener('click',taunt));
+document.querySelectorAll('[data-demo]').forEach(e=>e.addEventListener('click',()=>showScreen('demo')));
+document.querySelectorAll('[data-demo-btn]').forEach(e=>e.addEventListener('click',()=>toast('Aperçu 😉 ta vraie carte arrive avec ton lien perso.')));
+$('#demoBack').addEventListener('click', ()=>showScreen('accueil'));
 $('#unlockBtn').addEventListener('click', unlock);
 $('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') unlock(); });
 $('#hostBack').addEventListener('click', ()=>showScreen('accueil'));
