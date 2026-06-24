@@ -53,12 +53,18 @@ function decryptCard(code, payloadB64) {
   return JSON.parse(Buffer.concat([d.update(ct), d.final()]).toString('utf8'));
 }
 
+// ───────── Roster (non secret : pid + nom + rôle) et carte nom→pid ─────────
+const roster = Object.entries(cfg.players).map(([pid, pl]) => ({ pid, name: pl.name, role: pl.role }));
+const nameToPid = Object.fromEntries(roster.map(r => [r.name, r.pid]));
+
 // ───────── Construction du payload par joueur (ce que verra l'appli) ─────────
-function payloadFor(pl) {
+function payloadFor(pid, pl) {
   if (pl.role === 'marie') {
-    return { name: pl.name, role: 'marie', marieText: pl.marieText, secret: pl.secret };
+    return { pid, name: pl.name, role: 'marie', marieText: pl.marieText, secret: pl.secret };
   }
-  return { name: pl.name, role: 'killer', target: pl.target, mission: pl.mission, vip: pl.vip };
+  const targetPid = nameToPid[pl.target];
+  if (!targetPid) throw new Error(`Cible introuvable dans le roster : "${pl.target}" (joueur ${pid})`);
+  return { pid, name: pl.name, role: 'killer', target: pl.target, targetPid, mission: pl.mission, vip: pl.vip };
 }
 
 // ───────── Génération ─────────
@@ -71,7 +77,7 @@ let cardsHtml = '';
 let failures = 0;
 
 for (const [keyId, pl] of Object.entries(players)) {
-  const payload = payloadFor(pl);
+  const payload = payloadFor(keyId, pl);
   const enc = encryptCard(pl.code, payload);
   const url = BASE + '#' + enc;
 
@@ -144,12 +150,19 @@ fs.writeFileSync(p('out', 'host_sheet.md'), sheet, 'utf8');
 
 // ───────── docs/index.html — le LECTEUR, sans aucune donnée de jeu ─────────
 let reader = fs.readFileSync(p('src', 'reader.html'), 'utf8');
+const firebaseCfg = { ...(cfg.meta.firebase || {}) };
+delete firebaseCfg._comment;
+const firebaseEnabled = !!(firebaseCfg.databaseURL && firebaseCfg.apiKey);
 reader = reader
   .replaceAll('__TITLE__', cfg.meta.title)
   .replaceAll('__SUBTITLE__', cfg.meta.subtitle || '')
   .replaceAll('__ITER__', String(ITER))
   .replaceAll('__HOSTCODE__', cfg.meta.hostCode)
   .replaceAll('__BASEURL__', BASE)
+  .replaceAll('__GAMEID__', cfg.meta.gameId || 'game')
+  .replaceAll('__SCORING__', JSON.stringify(cfg.meta.scoring || {}))
+  .replaceAll('__ROSTER__', JSON.stringify(roster))
+  .replaceAll('__FIREBASE_CONFIG__', JSON.stringify(firebaseEnabled ? firebaseCfg : null))
   .replaceAll('__RULES_HTML__', cfg.rulesHtml);
 fs.writeFileSync(p('docs', 'index.html'), reader, 'utf8');
 

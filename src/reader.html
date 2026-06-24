@@ -8,13 +8,12 @@
 
 <!--
    ╔══════════════════════════════════════════════════════════════╗
-   ║   Tiens tiens... on fouille le code source pour trouver les   ║
-   ║   missions et les cibles ?  👀  Jolie tentative.              ║
-   ║   Mauvaise nouvelle : ce fichier ne contient AUCUNE donnée    ║
-   ║   de jeu. Tout est chiffré (AES-GCM) dans le lien perso de    ║
-   ║   chaque joueur, et déchiffrable uniquement avec SON code.    ║
-   ║   Tu peux le coller à n'importe quelle IA : elle ne verra     ║
-   ║   que du charabia. Retourne jouer. 😘                          ║
+   ║   On fouille le code source pour trouver cibles & missions ?  ║
+   ║   👀  Ce fichier ne contient AUCUNE assignation. Tout est     ║
+   ║   chiffré (AES-GCM) dans le lien perso de chaque joueur, et   ║
+   ║   l'héritage de cible passe par un échange ECDH chiffré de    ║
+   ║   bout en bout. La base ne voit jamais qui chasse qui.        ║
+   ║   Colle tout ça à une IA : elle ne verra que du charabia. 😘  ║
    ╚══════════════════════════════════════════════════════════════╝
 -->
 
@@ -22,7 +21,7 @@
   :root{
     --bg:#14101a; --bg2:#1d1726; --ivory:#f6efe4; --gold:#d4af37;
     --rose:#e8b4c4; --blood:#b3122e; --muted:#9a8fa6; --card:#221a2e;
-    --ok:#3ddc84;
+    --ok:#3ddc84; --wait:#e0a93b;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
@@ -30,343 +29,555 @@
     font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
     background:radial-gradient(1200px 800px at 50% -10%,#2a2038 0%,var(--bg) 60%);
     color:var(--ivory); min-height:100dvh; min-height:100vh;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    padding:24px 18px calc(24px + env(safe-area-inset-bottom)); overflow-x:hidden;
+    display:flex; flex-direction:column; align-items:center;
+    padding:24px 16px calc(28px + env(safe-area-inset-bottom)); overflow-x:hidden;
   }
   .wrap{width:100%; max-width:480px; margin:auto}
   .screen{display:none; animation:fade .4s ease both}
   .screen.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-  .logo{font-size:54px; text-align:center; cursor:pointer; user-select:none;
+  .logo{font-size:50px; text-align:center; cursor:pointer; user-select:none;
     filter:drop-shadow(0 4px 14px rgba(212,175,55,.25)); transition:transform .15s}
   .logo:active{transform:scale(.9)}
-  h1{font-size:1.5rem; text-align:center; margin:.4em 0 .1em; letter-spacing:.5px;
+  h1{font-size:1.45rem; text-align:center; margin:.4em 0 .1em; letter-spacing:.5px;
     background:linear-gradient(90deg,var(--gold),#fff6d8,var(--gold));
     -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
-  .sub{text-align:center; color:var(--rose); font-size:.92rem; margin:0 0 1.4em; letter-spacing:1px}
+  .sub{text-align:center; color:var(--rose); font-size:.9rem; margin:0 0 1.3em; letter-spacing:1px}
   p{line-height:1.55}
-  .lead{text-align:center; color:var(--muted); font-size:.98rem}
+  .lead{text-align:center; color:var(--muted); font-size:.97rem}
 
   .panel{background:linear-gradient(180deg,var(--bg2),var(--card));
-    border:1px solid rgba(212,175,55,.22); border-radius:18px; padding:22px 20px;
+    border:1px solid rgba(212,175,55,.22); border-radius:18px; padding:20px 18px; margin-bottom:14px;
     box-shadow:0 18px 50px rgba(0,0,0,.45)}
 
   label{display:block; font-size:.82rem; color:var(--muted); margin:0 0 8px; letter-spacing:.5px}
-  input[type=text],input[type=password]{
+  input[type=text]{
     width:100%; padding:15px 16px; font-size:1.15rem; letter-spacing:1px;
     background:#0f0b15; color:var(--ivory); border:1.5px solid rgba(212,175,55,.3);
     border-radius:12px; outline:none; text-align:center}
   input:focus{border-color:var(--gold)}
-  button.cta{width:100%; margin-top:16px; padding:15px; font-size:1.05rem; font-weight:700;
+  button{font-family:inherit}
+  button.cta{width:100%; margin-top:14px; padding:15px; font-size:1.05rem; font-weight:700;
     letter-spacing:.5px; color:#1a1320; cursor:pointer; border:none; border-radius:12px;
     background:linear-gradient(90deg,var(--gold),#f0d878); transition:transform .1s,filter .2s}
   button.cta:active{transform:scale(.98)} button.cta:hover{filter:brightness(1.06)}
   button.ghost{background:none; border:1px solid rgba(246,239,228,.25); color:var(--ivory);
     padding:11px; border-radius:12px; width:100%; margin-top:10px; cursor:pointer; font-size:.92rem}
-  .err{color:var(--blood); text-align:center; font-weight:600; min-height:1.3em; margin:12px 0 0;
-    font-size:.92rem}
+  .err{color:var(--blood); text-align:center; font-weight:600; min-height:1.2em; margin:10px 0 0; font-size:.9rem}
 
-  /* ---- Carte joueur ---- */
-  .badge{display:inline-block; font-size:.7rem; letter-spacing:2px; text-transform:uppercase;
-    padding:5px 12px; border-radius:999px; margin-bottom:14px}
+  .btn-act{width:100%; margin-top:10px; padding:15px; border-radius:13px; border:none; cursor:pointer;
+    font-size:1.02rem; font-weight:700; letter-spacing:.3px; color:#fff; min-height:52px;
+    display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .1s,filter .2s}
+  .btn-act:active{transform:scale(.98)}
+  .btn-kill{background:linear-gradient(90deg,#8c0f24,#d11a3a)}
+  .btn-vip{background:linear-gradient(90deg,#a9871f,#e0bb45); color:#241a05}
+  .btn-ok{background:linear-gradient(90deg,#1f7a4d,#3ddc84); color:#06210f}
+  .btn-no{background:linear-gradient(90deg,#5a4150,#7a5366)}
+  .btn-act[disabled]{opacity:.45; cursor:not-allowed; filter:grayscale(.4)}
+  .row2{display:flex; gap:10px} .row2 .btn-act{margin-top:10px}
+
+  .badge{display:inline-block; font-size:.68rem; letter-spacing:2px; text-transform:uppercase;
+    padding:5px 12px; border-radius:999px; margin-bottom:12px}
   .badge.kill{background:rgba(179,18,46,.18); color:#ff8094; border:1px solid rgba(179,18,46,.5)}
   .badge.vip{background:rgba(212,175,55,.16); color:var(--gold); border:1px solid rgba(212,175,55,.5)}
-  .who{font-size:.8rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
-  .target{font-size:2rem; font-weight:800; margin:.1em 0 .5em; color:#fff}
-  .block{background:#0f0b15; border-radius:14px; padding:16px 16px; margin:14px 0;
-    border-left:3px solid var(--blood)}
+  .pill{display:inline-block; font-size:.72rem; padding:4px 11px; border-radius:999px; font-weight:700; letter-spacing:.5px}
+  .pill.alive{background:rgba(61,220,132,.15); color:var(--ok); border:1px solid rgba(61,220,132,.45)}
+  .pill.dead{background:rgba(179,18,46,.18); color:#ff8094; border:1px solid rgba(179,18,46,.5)}
+  .who{font-size:.78rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
+  .target{font-size:1.9rem; font-weight:800; margin:.1em 0 .4em; color:#fff; line-height:1.1}
+  .block{background:#0f0b15; border-radius:14px; padding:14px 14px; margin:12px 0; border-left:3px solid var(--blood)}
   .block.vipblock{border-left-color:var(--gold)}
-  .block .k{font-size:.74rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted)}
-  .block .v{font-size:1.08rem; line-height:1.5; margin-top:6px}
-  .heart{color:var(--rose)}
+  .block .k{font-size:.72rem; letter-spacing:1.3px; text-transform:uppercase; color:var(--muted)}
+  .block .v{font-size:1.05rem; line-height:1.5; margin-top:5px}
 
-  details{margin-top:14px; background:#0f0b15; border-radius:12px; padding:2px 14px}
+  .lb{margin-top:6px}
+  .lb-row{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; margin:5px 0;
+    background:#0f0b15; font-size:.95rem}
+  .lb-row.me{background:rgba(212,175,55,.12); border:1px solid rgba(212,175,55,.4)}
+  .lb-rank{width:26px; text-align:center; font-weight:800; color:var(--gold)}
+  .lb-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
+  .lb-name.gone{color:var(--muted); text-decoration:line-through}
+  .lb-pts{font-weight:800} .lb-kills{color:var(--muted); font-size:.82rem; margin-left:2px}
+
+  .inbox-card{background:#0f0b15; border:1px solid rgba(224,169,59,.45); border-radius:13px;
+    padding:13px 14px; margin:10px 0; animation:fade .3s both}
+  .inbox-card .t{font-weight:700; margin-bottom:4px}
+  .inbox-card .d{font-size:.9rem; color:var(--muted); margin-bottom:8px}
+
+  details{margin-top:6px; background:#0f0b15; border-radius:12px; padding:2px 14px}
   summary{cursor:pointer; padding:12px 0; font-weight:600; color:var(--gold); list-style:none}
-  summary::-webkit-details-marker{display:none}
-  summary::before{content:"📜 "}
+  summary::-webkit-details-marker{display:none} summary::before{content:"📜 "}
   details[open] summary::before{content:"📖 "}
   .rules h3{color:var(--rose); margin:.9em 0 .3em; font-size:1rem}
   .rules ul{margin:.2em 0 .6em; padding-left:1.2em} .rules li{margin:.25em 0}
-  .rules p{font-size:.95rem}
+  .rules p{font-size:.94rem}
 
-  .foot{text-align:center; margin-top:22px; font-size:.78rem; color:#5d5468}
+  .notice{font-size:.82rem; color:var(--muted); text-align:center; padding:10px; border:1px dashed rgba(154,143,166,.4);
+    border-radius:10px; margin-top:8px}
+  .hd{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .hd .who{margin:0}
+  h2.sec{font-size:1rem; color:var(--rose); margin:18px 0 6px; letter-spacing:.5px}
+  .foot{text-align:center; margin-top:18px; font-size:.78rem; color:#5d5468}
   .foot a{color:#776b86; cursor:pointer; text-decoration:underline dotted}
 
-  /* easter egg overlays */
   #rain{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:50}
   .drop{position:absolute; top:-40px; font-size:26px; animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(112vh) rotate(360deg); opacity:.9}}
   .modal{position:fixed; inset:0; background:rgba(8,5,12,.82); display:none;
     align-items:center; justify-content:center; z-index:60; padding:24px; backdrop-filter:blur(3px)}
   .modal.show{display:flex; animation:fade .3s both}
-  .modal .box{max-width:380px; text-align:center; background:linear-gradient(180deg,#2a1730,#1b1226);
-    border:1px solid rgba(232,180,196,.4); border-radius:20px; padding:30px 24px}
+  .modal .box{max-width:380px; width:100%; text-align:center; background:linear-gradient(180deg,#2a1730,#1b1226);
+    border:1px solid rgba(232,180,196,.4); border-radius:20px; padding:26px 22px}
   .modal .box h2{margin:.1em 0 .4em; color:var(--rose)}
-  .toast{position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:70;
+  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:70; max-width:90vw;
     background:#2a1730; color:var(--ivory); border:1px solid var(--gold); padding:12px 18px;
-    border-radius:999px; font-size:.9rem; opacity:0; transition:opacity .3s}
+    border-radius:999px; font-size:.9rem; opacity:0; transition:opacity .3s; text-align:center}
   .toast.show{opacity:1}
+  @media (prefers-reduced-motion: reduce){ .drop{display:none} .screen{animation:none} }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-  <!-- ÉCRAN ACCUEIL (pas de lien perso) -->
   <section id="accueil" class="screen">
-    <div class="logo" id="logo">🔪💍</div>
+    <div class="logo" data-logo>🔪💍</div>
     <h1>__TITLE__</h1>
     <p class="sub">__SUBTITLE__</p>
     <div class="panel">
-      <p class="lead">Cette page est ta salle de jeu secrète.<br>
-      Pour voir <strong>ta</strong> cible et <strong>ta</strong> mission, ouvre
-      <strong>ton lien personnel</strong> ou scanne <strong>ton QR code</strong> remis par l'organisateur.</p>
-      <button class="ghost" onclick="openRules()">📜 Lire les règles</button>
-      <button class="ghost" onclick="askHost()">🎩 Espace organisateur</button>
+      <p class="lead">Pour rejoindre <strong>ton espace</strong>, ouvre <strong>ton lien personnel</strong>
+      ou scanne <strong>ton QR code</strong> remis par l'organisateur, puis entre ton code.</p>
+      <button class="ghost" data-rules>📜 Lire les règles</button>
+      <button class="ghost" data-host-ask>🎩 Espace organisateur</button>
     </div>
-    <p class="foot">Aucune mission n'est stockée ici. Tout est chiffré. <a onclick="taunt()">psst…</a></p>
+    <p class="foot">Aucune mission n'est stockée ici. <a data-taunt>psst…</a></p>
   </section>
 
-  <!-- ÉCRAN DÉVERROUILLAGE (lien perso présent) -->
   <section id="unlock" class="screen">
-    <div class="logo" id="logo2">🔪💍</div>
-    <h1>Ta carte t'attend</h1>
+    <div class="logo" data-logo>🔪💍</div>
+    <h1>Ton espace t'attend</h1>
     <p class="sub">entre ton code secret</p>
     <div class="panel">
       <label for="code">Code personnel (sur ta carte / ton QR)</label>
       <input id="code" type="text" autocomplete="off" autocapitalize="none" autocorrect="off"
-             spellcheck="false" inputmode="text" placeholder="• • • • • •"
-             onkeydown="if(event.key==='Enter')unlock()" />
-      <button class="cta" onclick="unlock()">🔓 Déverrouiller ma mission</button>
+             spellcheck="false" placeholder="• • • • • •" />
+      <button class="cta" id="unlockBtn">🔓 Entrer dans mon espace</button>
       <p class="err" id="err"></p>
-      <button class="ghost" onclick="openRules()">📜 Lire les règles</button>
+      <button class="ghost" data-rules>📜 Lire les règles</button>
     </div>
-    <p class="foot">Personne d'autre ne peut lire ta carte. Promis. 🤫</p>
+    <p class="foot">Personne d'autre ne peut lire ta carte. 🤫</p>
   </section>
 
-  <!-- ÉCRAN CARTE -->
-  <section id="card" class="screen">
-    <div id="cardBody"></div>
+  <section id="space" class="screen">
+    <div class="hd">
+      <div><div class="who">Ton espace</div><div id="spaceName" style="font-weight:800;font-size:1.1rem"></div></div>
+      <span id="spaceStatus" class="pill alive">● en vie</span>
+    </div>
+    <div id="spaceCard"></div>
+    <div id="spaceActions"></div>
+    <div id="inbox"></div>
+    <div id="boardWrap" class="panel" style="display:none">
+      <h2 class="sec" style="margin-top:0">🏆 Classement</h2>
+      <div id="leaderboard" class="lb"></div>
+    </div>
+    <div id="offlineNote"></div>
     <details class="rules"><summary>Les règles du jeu</summary>
       <div class="rulesContent">__RULES_HTML__</div>
     </details>
     <p class="foot">Garde ça pour toi. Bonne chasse. 🔪</p>
   </section>
 
-  <!-- ÉCRAN ORGANISATEUR -->
   <section id="host" class="screen">
     <div class="logo">🎩</div>
     <h1>Espace organisateur</h1>
-    <p class="sub">mode maître du jeu</p>
-    <div class="panel">
-      <p class="lead">Tu as la <strong>feuille maître</strong> (<code>out/host_sheet.md</code>) avec
-      toutes les cibles, missions et codes. Garde-la précieuse et secrète.</p>
-      <div class="rules rulesContent">__RULES_HTML__</div>
-      <button class="ghost" onclick="showScreen('accueil')">← Retour</button>
-    </div>
+    <p class="sub">maître du jeu</p>
+    <div id="hostBody"></div>
+    <details class="rules"><summary>Les règles du jeu</summary>
+      <div class="rulesContent">__RULES_HTML__</div>
+    </details>
+    <button class="ghost" id="hostBack">← Retour</button>
   </section>
 
 </div>
 
 <div id="rain"></div>
-
-<div class="modal" id="loveModal" onclick="this.classList.remove('show')">
-  <div class="box">
-    <div style="font-size:46px">💞</div>
-    <h2>Camille & Alex</h2>
-    <p>Tout ce petit monde a fait des kilomètres jusqu'en Lozère pour une seule raison :
-    vous. Que ce week-end soit à la hauteur de votre histoire — bruyant, tendre, et un peu
-    n'importe quoi. 🥂</p>
-    <p style="color:var(--muted);font-size:.82rem">(touche pour fermer)</p>
-  </div>
-</div>
-
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
 <div class="toast" id="toast"></div>
 
-<script>
-  "use strict";
-  const ITER = __ITER__;
-  const HOSTCODE = "__HOSTCODE__";
+<script type="module">
+"use strict";
 
-  // ───────── Faux indices pour les curieux (n'apparaissent jamais en jeu) ─────────
-  const _leurres = [
-    "Mission : convaincre la cible que la Terre est plate.",
-    "Cible : le chat du gîte. Mission : lui apprendre Mario Kart.",
-    "Si tu lis ça, c'est que tu triches. Va te dénoncer à l'organisateur. 😘"
-  ];
-  function taunt(){ toast("Rien à gratter ici 😏 tout est chiffré."); }
+/* ════════ Constantes injectées par le générateur (rien de secret ici) ════════ */
+const ITER = __ITER__;
+const HOSTCODE = "__HOSTCODE__";
+const GAMEID = "__GAMEID__";
+const SCORING = __SCORING__;
+const ROSTER = __ROSTER__;                   // [{pid,name,role}]
+const FIREBASE_CONFIG = __FIREBASE_CONFIG__; // objet ou null (mode hors-ligne)
+const MARIES = ROSTER.filter(r => r.role === 'marie');
 
-  // ───────── Navigation ─────────
-  function showScreen(id){
-    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-    document.getElementById(id).classList.add('active');
-    window.scrollTo(0,0);
+/* Faux indices pour les curieux (jamais affichés en jeu) */
+const _leurres = ["Cible : le chat du gîte. Mission : lui apprendre Mario Kart.", "Si tu lis ça, tu triches. 😘"];
+
+/* ════════ Helpers DOM ════════ */
+const $ = s => document.querySelector(s);
+const el = (tag, cls, html) => { const e=document.createElement(tag); if(cls)e.className=cls; if(html!=null)e.innerHTML=html; return e; };
+const escapeHtml = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); $('#'+id).classList.add('active'); window.scrollTo(0,0); }
+
+/* ════════ Crypto : déverrouillage carte (PBKDF2 + AES-GCM) ════════ */
+function b64urlToBytes(s){ s=s.replace(/-/g,'+').replace(/_/g,'/'); while(s.length%4)s+='='; const b=atob(s); const o=new Uint8Array(b.length); for(let i=0;i<b.length;i++)o[i]=b.charCodeAt(i); return o; }
+function bytesToB64url(bytes){ let bin=''; bytes.forEach(b=>bin+=String.fromCharCode(b)); return btoa(bin).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,''); }
+async function decryptUnlock(code, payloadB64){
+  const packed=b64urlToBytes(payloadB64);
+  const salt=packed.slice(0,16), iv=packed.slice(16,28), data=packed.slice(28);
+  const km=await crypto.subtle.importKey('raw', new TextEncoder().encode(code), {name:'PBKDF2'}, false, ['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:ITER, hash:'SHA-256'}, km, {name:'AES-GCM', length:256}, false, ['decrypt']);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, data);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+/* ════════ Crypto : héritage chiffré bout-en-bout (ECDH P-256) ════════ */
+async function genECDH(){ return crypto.subtle.generateKey({name:'ECDH', namedCurve:'P-256'}, true, ['deriveKey']); }
+const expJwk = k => crypto.subtle.exportKey('jwk', k);
+const impPub = j => crypto.subtle.importKey('jwk', j, {name:'ECDH', namedCurve:'P-256'}, true, []);
+const impPriv = j => crypto.subtle.importKey('jwk', j, {name:'ECDH', namedCurve:'P-256'}, true, ['deriveKey']);
+const deriveAes = (priv, pub) => crypto.subtle.deriveKey({name:'ECDH', public:pub}, priv, {name:'AES-GCM', length:256}, false, ['encrypt','decrypt']);
+async function aesEnc(key, obj){ const iv=crypto.getRandomValues(new Uint8Array(12)); const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, new TextEncoder().encode(JSON.stringify(obj)))); const out=new Uint8Array(12+ct.length); out.set(iv); out.set(ct,12); return bytesToB64url(out); }
+async function aesDec(key, b64){ const p=b64urlToBytes(b64); const iv=p.slice(0,12), ct=p.slice(12); const pt=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct); return JSON.parse(new TextDecoder().decode(pt)); }
+
+/* ════════ État ════════ */
+const state = { me:null, fb:null, players:{}, epoch:1, killAll:{}, vipAll:{}, hostSecret:{}, epochSeen:null };
+function getPayload(){ const h=location.hash.replace(/^#/,'').trim(); return h.length?h:null; }
+const lsKey = pid => 'mecard_'+GAMEID+'_'+pid;
+function saveMe(){ try{ localStorage.setItem(lsKey(state.me.pid), JSON.stringify({...state.me, epoch:state.epoch})); }catch(e){} }
+function loadMe(pid){ try{ const v=localStorage.getItem(lsKey(pid)); return v?JSON.parse(v):null; }catch(e){ return null; } }
+
+/* ════════ Firebase ════════ */
+async function initFirebase(){
+  if(!FIREBASE_CONFIG) return null;
+  const [appMod, dbMod] = await Promise.all([
+    import('https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js'),
+    import('https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js')
+  ]);
+  const app = appMod.initializeApp(FIREBASE_CONFIG);
+  const db = dbMod.getDatabase(app);
+  return { db, ...dbMod };
+}
+const pref = sub => state.fb.ref(state.fb.db, `games/${GAMEID}/${sub}`);
+async function readEpochOnce(){ try{ const s=await state.fb.get(pref('meta/epoch')); return s.val()||1; }catch(e){ return 1; } }
+
+/* ════════ Déverrouillage ════════ */
+async function unlock(){
+  const input=$('#code'), err=$('#err'); const raw=input.value.trim(); err.textContent='';
+  if(!raw){ err.textContent='Entre ton code 🙂'; return; }
+  if(/^mari[ée]s?$/i.test(raw)){ heartsRain(); toast('💍 vous d’abord 😘'); }
+  if(raw===HOSTCODE){ enterHost(); return; }
+  const payload=getPayload();
+  if(!payload){ err.textContent='Aucune carte dans ce lien. Ouvre TON lien perso.'; return; }
+  let card;
+  try{ card=await decryptUnlock(raw, payload); }
+  catch(e){ err.textContent='Mauvais code, ou ce n’est pas ta carte. Réessaie.'; input.select(); return; }
+  await enterSpace(card);
+}
+
+/* ════════ Espace joueur ════════ */
+async function enterSpace(card){
+  if(!state.fb && FIREBASE_CONFIG){ try{ state.fb = await initFirebase(); }catch(e){ console.warn('Firebase indispo', e); state.fb=null; } }
+  if(state.fb){ state.epoch = await readEpochOnce(); state.epochSeen = state.epoch; }
+  const saved = loadMe(card.pid);
+  state.me = (saved && saved.epoch===state.epoch) ? {...card, ...saved} : {...card, alive:true};
+  saveMe();
+  $('#spaceName').textContent = state.me.name;
+  renderSpace(); showScreen('space');
+  if(!state.fb){ renderOffline(); return; }
+  $('#offlineNote').innerHTML=''; $('#boardWrap').style.display='block';
+  await registerSelf();
+  attachListeners();
+  renderActions();
+}
+function renderOffline(){
+  $('#boardWrap').style.display='none'; $('#spaceActions').innerHTML='';
+  $('#offlineNote').innerHTML='<div class="notice">Mode hors-ligne : le multijoueur (kills, validations, classement) s’active quand l’organisateur a configuré Firebase. Ta carte, elle, fonctionne déjà.</div>';
+}
+function renderSpace(){
+  const m=state.me, c=$('#spaceCard');
+  $('#spaceStatus').className='pill '+(m.alive===false?'dead':'alive');
+  $('#spaceStatus').textContent = m.alive===false ? '💀 éliminé·e' : '● en vie';
+  if(m.role==='marie'){
+    c.innerHTML=`<div class="panel">
+      <span class="badge vip">💍 Cible VIP — intouchable</span>
+      <div class="target">${/camille/i.test(m.name)?'Mariée 👰':'Marié 🤵'}</div>
+      <div class="block vipblock"><div class="k">Ton rôle</div><div class="v">${m.marieText||''}</div></div>
+      <div class="block"><div class="k">🤫 Ta mission secrète (+${SCORING.secret} pts)</div><div class="v">${escapeHtml(m.secret||'')}</div></div>
+    </div>`;
+  } else {
+    const dead=m.alive===false;
+    c.innerHTML=`<div class="panel">
+      <span class="badge kill">${dead?'☠️ Hors-jeu — encore des points à prendre':'☠️ Contrat actif'}</span>
+      <div class="who">Ta cible</div>
+      <div class="target">${dead?'—':escapeHtml(m.target)}</div>
+      <div class="block"><div class="k">🔪 Pour l’éliminer (+${SCORING.kill} pts)</div><div class="v">${dead?'Tu as été éliminé·e : plus de cible. Mais continue les défis mariés !':escapeHtml(m.mission)}</div></div>
+      <div class="block vipblock"><div class="k">⭐ Défi marié (+${SCORING.vip} pts)</div><div class="v">${escapeHtml((m.vip||'').replace(/^Mission VIP\s*:\s*/i,''))}</div></div>
+    </div>`;
   }
-
-  // ───────── Crypto ─────────
-  function b64urlToBytes(s){
-    s = s.replace(/-/g,'+').replace(/_/g,'/');
-    while(s.length % 4) s += '=';
-    const bin = atob(s);
-    const out = new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
-    return out;
-  }
-  async function decryptCard(code, payloadB64){
-    const packed = b64urlToBytes(payloadB64);
-    const salt = packed.slice(0,16), iv = packed.slice(16,28), data = packed.slice(28);
-    const km = await crypto.subtle.importKey(
-      'raw', new TextEncoder().encode(code), {name:'PBKDF2'}, false, ['deriveKey']);
-    const key = await crypto.subtle.deriveKey(
-      {name:'PBKDF2', salt, iterations:ITER, hash:'SHA-256'},
-      km, {name:'AES-GCM', length:256}, false, ['decrypt']);
-    const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, data);
-    return JSON.parse(new TextDecoder().decode(plain));
-  }
-
-  function getPayload(){
-    const h = location.hash.replace(/^#/,'').trim();
-    return h.length ? h : null;
-  }
-
-  // ───────── Déverrouillage ─────────
-  async function unlock(){
-    const input = document.getElementById('code');
-    const raw = input.value.trim();
-    const err = document.getElementById('err');
-    err.textContent = "";
-    if(!raw){ err.textContent = "Entre ton code 🙂"; return; }
-
-    // easter egg : mot secret
-    if(/^mari[ée]s?$/i.test(raw)){ heartsRain(); toast("💍 vous d'abord 😘"); }
-
-    // code organisateur
-    if(raw === HOSTCODE){ showScreen('host'); return; }
-
-    const payload = getPayload();
-    if(!payload){ err.textContent = "Aucune carte dans ce lien. Ouvre TON lien perso."; return; }
-
-    try{
-      const data = await decryptCard(raw, payload);
-      renderCard(data);
-      showScreen('card');
-    }catch(e){
-      err.textContent = "Mauvais code, ou ce n'est pas ta carte. Réessaie.";
-      input.select();
+}
+function renderActions(){
+  const m=state.me, a=$('#spaceActions'); a.innerHTML='';
+  const wrap=el('div','panel'); wrap.appendChild(el('div','who','Tes actions'));
+  if(m.role==='marie'){
+    const sec=el('button','btn-act btn-vip','🤫 J’ai réussi ma mission secrète'); sec.onclick=()=>claimSecret(sec);
+    wrap.appendChild(sec);
+    wrap.appendChild(el('div','notice','Valide ci-dessous les défis que les invités prétendent avoir réussis sur toi. Refuser = « GRILLÉ ! » (+'+SCORING.grille+' pts pour toi).'));
+  } else {
+    if(m.alive!==false && m.targetPid && m.targetPid!==m.pid){
+      const k=el('button','btn-act btn-kill','🔪 J’ai éliminé '+escapeHtml(m.target)); k.onclick=()=>initiateKill(k); wrap.appendChild(k);
+    } else if(m.targetPid===m.pid){
+      wrap.appendChild(el('div','notice','🏆 Ta cible, c’est toi : tu es le dernier survivant en lice !'));
     }
+    const v=el('button','btn-act btn-vip','⭐ J’ai réussi mon défi marié'); v.onclick=()=>chooseMarieThenClaimVip(v); wrap.appendChild(v);
   }
+  a.appendChild(wrap);
+}
 
-  // ───────── Rendu carte ─────────
-  function renderCard(d){
-    const el = document.getElementById('cardBody');
-    if(d.role === 'marie'){
-      el.innerHTML = `
-        <div class="panel">
-          <span class="badge vip">💍 Cible VIP — intouchable</span>
-          <div class="who">${d.name}</div>
-          <div class="target">Tu es ${/camille/i.test(d.name)?'la mariée 👰':'le marié 🤵'}</div>
-          <div class="block vipblock">
-            <div class="k">Ton rôle</div>
-            <div class="v">${d.marieText||''}</div>
-          </div>
-          <div class="block">
-            <div class="k">🤫 Ta mission secrète</div>
-            <div class="v">${d.secret||''}</div>
-          </div>
-        </div>`;
-    }else{
-      el.innerHTML = `
-        <div class="panel">
-          <span class="badge kill">☠️ Contrat actif</span>
-          <div class="who">Ta cible</div>
-          <div class="target">${escapeHtml(d.target)}</div>
-          <div class="block">
-            <div class="k">🔪 Pour l'éliminer</div>
-            <div class="v">${escapeHtml(d.mission)}</div>
-          </div>
-          <div class="block vipblock">
-            <div class="k">⭐ ${escapeHtml((d.vip||'').replace(/^Mission VIP\s*:\s*/i,'Mission VIP : '))}</div>
-          </div>
-        </div>`;
-    }
-  }
-  function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
-
-  // ───────── Règles / organisateur ─────────
-  function openRules(){
-    const r = document.querySelector('#card .rulesContent') || document.querySelector('.rulesContent');
-    alertModal(r ? r.innerHTML : "Règles indisponibles.");
-  }
-  function alertModal(html){
-    const m = document.getElementById('loveModal');
-    m.querySelector('.box').innerHTML =
-      `<div class="rules" style="text-align:left">${html}</div>
-       <p style="color:var(--muted);font-size:.82rem;text-align:center;margin-top:14px">(touche pour fermer)</p>`;
-    m.classList.add('show');
-  }
-  function askHost(){
-    const c = prompt("Code organisateur :");
-    if(c && c.trim() === HOSTCODE) showScreen('host');
-    else if(c) toast("Code organisateur incorrect.");
-  }
-
-  // ───────── Easter eggs ─────────
-  let logoClicks = 0, logoTimer = null;
-  function bumpLogo(){
-    logoClicks++;
-    clearTimeout(logoTimer);
-    logoTimer = setTimeout(()=>logoClicks=0, 1400);
-    if(logoClicks >= 7){
-      logoClicks = 0; heartsRain();
-      document.getElementById('loveModal').classList.add('show');
-      // restore love content (openRules may have overwritten it)
-      const box = document.querySelector('#loveModal .box');
-      box.innerHTML = `<div style="font-size:46px">💞</div><h2>Camille &amp; Alex</h2>
-        <p>Tout ce petit monde a fait des kilomètres jusqu'en Lozère pour une seule raison :
-        vous. Que ce week-end soit à la hauteur de votre histoire — bruyant, tendre, et un peu
-        n'importe quoi. 🥂</p>
-        <p style="color:var(--muted);font-size:.82rem">(touche pour fermer)</p>`;
-    }
-  }
-  function heartsRain(){
-    const rain = document.getElementById('rain');
-    const emo = ['💍','❤️','🔪','🥂','💞','👰','🤵','🌶️'];
-    for(let i=0;i<40;i++){
-      const d = document.createElement('div');
-      d.className = 'drop';
-      d.textContent = emo[(Math.random()*emo.length)|0];
-      d.style.left = (Math.random()*100)+'vw';
-      d.style.animationDuration = (2.5 + Math.random()*2.5)+'s';
-      d.style.animationDelay = (Math.random()*0.8)+'s';
-      d.style.fontSize = (18 + Math.random()*22)+'px';
-      rain.appendChild(d);
-      setTimeout(()=>d.remove(), 5500);
-    }
-  }
-  let toastTimer=null;
-  function toast(msg){
-    const t = document.getElementById('toast');
-    t.textContent = msg; t.classList.add('show');
-    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
-  }
-
-  // Konami code
-  const konami = [38,38,40,40,37,39,37,39,66,65];
-  let kpos = 0;
-  window.addEventListener('keydown', e=>{
-    if(e.keyCode === konami[kpos]){ if(++kpos === konami.length){ kpos=0; heartsRain(); toast("💘 Mode parano activé"); } }
-    else kpos = (e.keyCode === konami[0]) ? 1 : 0;
+/* ── enregistrement + écouteurs ── */
+async function registerSelf(){
+  await state.fb.runTransaction(pref('players/'+state.me.pid), cur =>
+    cur ? cur : { name:state.me.name, role:state.me.role, alive:(state.me.alive===false?false:true), kills:0, points:0 });
+}
+function attachListeners(){
+  const { onValue }=state.fb;
+  onValue(pref('meta/epoch'), s=>{ const e=s.val()||1;
+    if(state.epochSeen!=null && e!==state.epochSeen){ localStorage.removeItem(lsKey(state.me.pid)); toast('🔄 Partie réinitialisée par l’orga.'); setTimeout(()=>location.reload(),900); }
+    state.epochSeen=e;
   });
+  onValue(pref('players'), s=>{ state.players=s.val()||{}; renderLeaderboard('#leaderboard'); syncMyStatus(); });
+  onValue(pref('killClaims'), s=>{ state.killAll=s.val()||{}; processMyKills(); renderInbox(); });
+  onValue(pref('vipClaims'), s=>{ state.vipAll=s.val()||{}; processMyVipFeedback(); renderInbox(); });
+}
+function syncMyStatus(){
+  const p=state.players[state.me.pid]; if(!p) return;
+  if(p.alive===false && state.me.alive!==false){ state.me.alive=false; saveMe(); renderSpace(); renderActions(); }
+}
 
-  // ───────── Boot ─────────
-  document.getElementById('logo').addEventListener('click', bumpLogo);
-  document.getElementById('logo2').addEventListener('click', bumpLogo);
-  if(getPayload()){ showScreen('unlock'); document.getElementById('code').focus(); }
-  else { showScreen('accueil'); }
-  if(!(window.crypto && window.crypto.subtle)){
-    document.getElementById('err') && (document.getElementById('err').textContent =
-      "Ton navigateur bloque le déchiffrement. Ouvre le lien en HTTPS.");
+/* ── classement ── */
+function renderLeaderboard(mountSel){
+  const mount=$(mountSel); if(!mount) return;
+  const rows=Object.entries(state.players).map(([pid,p])=>({pid,...p}))
+    .sort((a,b)=>(b.points||0)-(a.points||0)||(b.kills||0)-(a.kills||0)||a.name.localeCompare(b.name));
+  mount.innerHTML='';
+  rows.forEach((r,i)=>{
+    const row=el('div','lb-row'+(state.me&&r.pid===state.me.pid?' me':''));
+    const medal=['🥇','🥈','🥉'][i]||(i+1);
+    row.innerHTML=`<div class="lb-rank">${medal}</div>
+      <div class="lb-name${r.alive===false?' gone':''}">${r.alive===false?'💀 ':''}${escapeHtml(r.name)}</div>
+      <div class="lb-pts">${r.points||0}<span class="lb-kills"> · ${r.kills||0}🔪</span></div>`;
+    mount.appendChild(row);
+  });
+  if(!rows.length) mount.innerHTML='<div class="notice">Personne n’a encore rejoint. L’orga peut « démarrer la partie ».</div>';
+}
+
+/* ── KILL : initiation + réception de l'héritage ── */
+async function initiateKill(btn){
+  const { push, set }=state.fb;
+  btn.disabled=true; btn.textContent='⏳ En attente de confirmation…';
+  const ref=push(pref('killClaims')); const id=ref.key;
+  const kp=await genECDH();
+  localStorage.setItem('killpriv_'+id, JSON.stringify(await expJwk(kp.privateKey)));
+  await set(ref, { killerId:state.me.pid, killerName:state.me.name, victimId:state.me.targetPid,
+    victimName:state.me.target, killerPub:await expJwk(kp.publicKey), status:'pending', ts:Date.now() });
+  toast('Demande envoyée à '+state.me.target+'. Attends sa confirmation.');
+}
+async function processMyKills(){
+  const { update, increment }=state.fb;
+  for(const [id,c] of Object.entries(state.killAll)){
+    if(c.killerId===state.me.pid && c.status==='confirmed' && !localStorage.getItem('proc_'+id)){
+      const privRaw=localStorage.getItem('killpriv_'+id); if(!privRaw) continue;
+      try{
+        const priv=await impPriv(JSON.parse(privRaw)); const pub=await impPub(c.victimPub);
+        const aes=await deriveAes(priv,pub); const card=await aesDec(aes,c.cardBlob);
+        localStorage.setItem('proc_'+id,'1');
+        state.me.target=card.target; state.me.targetPid=card.targetPid; state.me.mission=card.mission; saveMe();
+        await update(pref('players/'+state.me.pid), {points:increment(SCORING.kill), kills:increment(1)});
+        await update(pref('killClaims/'+id), {status:'done'});
+        renderSpace(); renderActions();
+        if(state.me.targetPid===state.me.pid){ heartsRain(); openModal('🏆','Dernier survivant !','Ta nouvelle cible, c’est toi-même : il ne reste que toi. Préviens l’orga pour le bonus !'); }
+        else toast('☠️ Touché ! Nouvelle cible : '+state.me.target+' (+'+SCORING.kill+' pts)');
+      }catch(e){ console.warn('héritage KO', e); }
+    }
+    if(c.killerId===state.me.pid && c.status==='rejected' && !localStorage.getItem('rej_'+id)){
+      localStorage.setItem('rej_'+id,'1'); toast('❌ '+c.victimName+' conteste ta tentative.'); renderActions();
+    }
   }
+}
+
+/* ── boîte de réception (victime + marié) ── */
+function renderInbox(){
+  if(!state.me) return; const box=$('#inbox'); if(!box) return; box.innerHTML='';
+  for(const [id,c] of Object.entries(state.killAll)){
+    if(c.victimId===state.me.pid && c.status==='pending'){
+      const card=el('div','inbox-card');
+      card.innerHTML=`<div class="t">🔪 ${escapeHtml(c.killerName)} prétend t’avoir éliminé·e</div>
+        <div class="d">Si c’est vrai, confirme : ta cible actuelle lui sera transmise (chiffrée) et tu passes hors-jeu. Tu pourras encore marquer via les défis mariés.</div>`;
+      const r=el('div','row2');
+      const yes=el('button','btn-act btn-ok','✅ Je confirme'); yes.onclick=()=>confirmDeath(id,c,yes);
+      const no=el('button','btn-act btn-no','🛡️ Contester'); no.onclick=()=>contestDeath(id,no);
+      r.append(yes,no); card.appendChild(r); box.appendChild(card);
+    }
+  }
+  if(state.me.role==='marie'){
+    for(const [id,c] of Object.entries(state.vipAll)){
+      if(c.marieId===state.me.pid && c.status==='pending'){
+        const card=el('div','inbox-card');
+        card.innerHTML=`<div class="t">⭐ ${escapeHtml(c.playerName)} prétend t’avoir piégé·e</div><div class="d">« ${escapeHtml(c.text)} »</div>`;
+        const r=el('div','row2');
+        const yes=el('button','btn-act btn-ok','✅ Valider (+'+SCORING.vip+')'); yes.onclick=()=>validateVip(id,c,yes,true);
+        const no=el('button','btn-act btn-no','🛡️ GRILLÉ !'); no.onclick=()=>validateVip(id,c,no,false);
+        r.append(yes,no); card.appendChild(r); box.appendChild(card);
+      }
+    }
+  }
+}
+async function confirmDeath(id,c,btn){
+  const { update }=state.fb; btn.disabled=true;
+  const myCard={ target:state.me.target, targetPid:state.me.targetPid, mission:state.me.mission };
+  const vp=await genECDH(); const kpub=await impPub(c.killerPub);
+  const aes=await deriveAes(vp.privateKey,kpub); const blob=await aesEnc(aes,myCard);
+  await update(pref('killClaims/'+id), {status:'confirmed', victimPub:await expJwk(vp.publicKey), cardBlob:blob});
+  await update(pref('players/'+state.me.pid), {alive:false});
+  state.me.alive=false; saveMe(); renderSpace(); renderActions();
+  toast('Tu es hors-jeu. Vengeance via les défis mariés ! 😈');
+}
+async function contestDeath(id,btn){ btn.disabled=true; await state.fb.update(pref('killClaims/'+id), {status:'rejected'}); toast('Contestation envoyée.'); }
+
+/* ── DÉFI MARIÉ ── */
+function chooseMarieThenClaimVip(){
+  const opts=MARIES.map(m=>`<button class="btn-act btn-vip" data-mid="${m.pid}">${escapeHtml(m.name)}</button>`).join('');
+  openModalHtml(`<div style="font-size:40px">⭐</div><h2>Quel marié as-tu piégé ?</h2>${opts}<button class="ghost" data-close>Annuler</button>`);
+  $('#modalBox').querySelectorAll('[data-mid]').forEach(b=>b.onclick=()=>{ closeModal(); claimVip(b.dataset.mid); });
+  $('#modalBox').querySelector('[data-close]').onclick=closeModal;
+}
+async function claimVip(marieId){
+  const { push, set }=state.fb; const ref=push(pref('vipClaims'));
+  await set(ref, { playerId:state.me.pid, playerName:state.me.name, marieId,
+    text:((state.me.vip||'').replace(/^Mission VIP\s*:\s*/i,''))||'(défi marié)', status:'pending', ts:Date.now() });
+  toast('Validation demandée au marié. Attends son OK.');
+}
+function processMyVipFeedback(){
+  for(const [id,c] of Object.entries(state.vipAll)){
+    if(c.playerId===state.me.pid){
+      if(c.status==='validated' && !localStorage.getItem('vok_'+id)){ localStorage.setItem('vok_'+id,'1'); toast('⭐ Défi marié validé ! +'+SCORING.vip+' pts'); }
+      if(c.status==='refused' && !localStorage.getItem('vno_'+id)){ localStorage.setItem('vno_'+id,'1'); toast('🛡️ GRILLÉ ! Le marié a refusé.'); }
+    }
+  }
+}
+async function validateVip(id,c,btn,ok){
+  const { update, increment }=state.fb; btn.disabled=true;
+  if(ok){ await update(pref('vipClaims/'+id),{status:'validated'}); await update(pref('players/'+c.playerId),{points:increment(SCORING.vip)}); toast('Validé. +'+SCORING.vip+' pour '+c.playerName); }
+  else { await update(pref('vipClaims/'+id),{status:'refused'}); await update(pref('players/'+state.me.pid),{points:increment(SCORING.grille)}); toast('GRILLÉ ! +'+SCORING.grille+' pour toi 😎'); }
+}
+
+/* ── mission secrète marié (validée par l'orga) ── */
+async function claimSecret(btn){
+  if(!state.fb){ toast('Multijoueur hors-ligne.'); return; }
+  const { push, set }=state.fb; const ref=push(pref('secretClaims'));
+  await set(ref, { playerId:state.me.pid, playerName:state.me.name, text:state.me.secret||'', status:'pending', ts:Date.now() });
+  toast('Demande envoyée à l’orga pour validation.');
+}
+
+/* ════════ Organisateur ════════ */
+async function enterHost(){
+  showScreen('host');
+  if(!state.fb && FIREBASE_CONFIG){ try{ state.fb=await initFirebase(); }catch(e){ state.fb=null; } }
+  renderHost();
+  if(state.fb){
+    const { onValue }=state.fb;
+    onValue(pref('players'), s=>{ state.players=s.val()||{}; renderHost(); });
+    onValue(pref('secretClaims'), s=>{ state.hostSecret=s.val()||{}; renderHost(); });
+  }
+}
+function renderHost(){
+  const b=$('#hostBody'); b.innerHTML='';
+  if(!state.fb){ b.innerHTML='<div class="panel"><div class="notice">Firebase non configuré : pilotage indisponible ici. Ta feuille maître reste dans <code>out/host_sheet.md</code>.</div></div>'; return; }
+  const ctl=el('div','panel'); ctl.appendChild(el('div','who','Partie'));
+  const start=el('button','btn-act btn-ok','🚀 Démarrer / Réinitialiser la partie'); start.onclick=()=>resetGame(start);
+  ctl.appendChild(start);
+  ctl.appendChild(el('div','notice','Remet les scores à zéro et tout le monde « en vie ». À faire après tes tests, juste avant le vrai départ.'));
+  b.appendChild(ctl);
+
+  const sec=el('div','panel'); sec.appendChild(el('h2','sec','🤫 Missions secrètes des mariés'));
+  let any=false;
+  for(const [id,c] of Object.entries(state.hostSecret||{})){ if(c.status==='pending'){ any=true;
+    const card=el('div','inbox-card'); card.innerHTML=`<div class="t">${escapeHtml(c.playerName)}</div><div class="d">« ${escapeHtml(c.text)} »</div>`;
+    const yes=el('button','btn-act btn-ok','✅ Valider (+'+SCORING.secret+')'); yes.onclick=()=>validateSecret(id,c,yes); card.appendChild(yes); sec.appendChild(card);
+  }}
+  if(!any) sec.appendChild(el('div','notice','Aucune demande en attente.'));
+  b.appendChild(sec);
+
+  const sv=el('div','panel'); sv.appendChild(el('h2','sec','🏆 Dernier survivant (+'+SCORING.survivor+')'));
+  const alive=Object.entries(state.players).filter(([_,p])=>p.alive!==false);
+  if(alive.length) alive.forEach(([pid,p])=>{ const btn=el('button','btn-act btn-vip','Couronner '+escapeHtml(p.name)); btn.onclick=()=>awardSurvivor(pid,p,btn); sv.appendChild(btn); });
+  else sv.appendChild(el('div','notice','Personne en vie pour l’instant.'));
+  b.appendChild(sv);
+
+  const board=el('div','panel'); board.appendChild(el('h2','sec','Classement complet'));
+  const lb=el('div','lb'); lb.id='hostLb'; board.appendChild(lb); b.appendChild(board);
+  renderLeaderboard('#hostLb');
+}
+async function resetGame(btn){
+  if(!confirm('Réinitialiser TOUTE la partie (scores, kills, statuts) ?')) return;
+  btn.disabled=true;
+  const { set }=state.fb;
+  const seed={}; ROSTER.forEach(r=>{ seed[r.pid]={name:r.name, role:r.role, alive:true, kills:0, points:0}; });
+  await set(pref('players'), seed);
+  await set(pref('killClaims'), null);
+  await set(pref('vipClaims'), null);
+  await set(pref('secretClaims'), null);
+  await set(pref('meta/epoch'), (state.epoch||1)+1);
+  state.epoch=(state.epoch||1)+1;
+  toast('Partie réinitialisée. Tout le monde en vie, scores à zéro.');
+  btn.disabled=false;
+}
+async function validateSecret(id,c,btn){ btn.disabled=true; await state.fb.update(pref('secretClaims/'+id),{status:'validated'}); await state.fb.update(pref('players/'+c.playerId),{points:state.fb.increment(SCORING.secret)}); toast('Validé. +'+SCORING.secret+' pour '+c.playerName); }
+async function awardSurvivor(pid,p,btn){ if(!confirm('Couronner '+p.name+' (+'+SCORING.survivor+') ?'))return; btn.disabled=true; await state.fb.update(pref('players/'+pid),{points:state.fb.increment(SCORING.survivor)}); toast('👑 '+p.name+' couronné·e (+'+SCORING.survivor+')'); }
+
+/* ════════ Règles / modales / easter eggs ════════ */
+function openModal(emoji,title,text){ openModalHtml(`<div style="font-size:44px">${emoji}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(text)}</p><button class="ghost" data-close>Fermer</button>`); $('#modalBox').querySelector('[data-close]').onclick=closeModal; }
+function openModalHtml(html){ $('#modalBox').innerHTML=html; $('#modal').classList.add('show'); }
+function closeModal(){ $('#modal').classList.remove('show'); }
+function openRules(){ const r=document.querySelector('.rulesContent'); openModalHtml(`<div class="rules" style="text-align:left">${r?r.innerHTML:''}</div><button class="ghost" data-close>Fermer</button>`); $('#modalBox').querySelector('[data-close]').onclick=closeModal; }
+function askHost(){ const c=prompt('Code organisateur :'); if(c&&c.trim()===HOSTCODE) enterHost(); else if(c) toast('Code organisateur incorrect.'); }
+function taunt(){ toast('Rien à gratter ici 😏 tout est chiffré.'); }
+
+let logoClicks=0, logoTimer=null;
+function bumpLogo(){ logoClicks++; clearTimeout(logoTimer); logoTimer=setTimeout(()=>logoClicks=0,1400);
+  if(logoClicks>=7){ logoClicks=0; heartsRain(); openModalHtml(`<div style="font-size:46px">💞</div><h2>Camille &amp; Alex</h2>
+    <p>Tout ce petit monde a fait des kilomètres jusqu’en Lozère pour une seule raison : vous. Que ce week-end soit à la hauteur de votre histoire — bruyant, tendre, et un peu n’importe quoi. 🥂</p>
+    <button class="ghost" data-close>Fermer</button>`); $('#modalBox').querySelector('[data-close]').onclick=closeModal; } }
+function heartsRain(){ const rain=$('#rain'); const emo=['💍','❤️','🔪','🥂','💞','👰','🤵','🌶️'];
+  for(let i=0;i<40;i++){ const d=el('div','drop'); d.textContent=emo[(Math.random()*emo.length)|0];
+    d.style.left=(Math.random()*100)+'vw'; d.style.animationDuration=(2.5+Math.random()*2.5)+'s';
+    d.style.animationDelay=(Math.random()*0.8)+'s'; d.style.fontSize=(18+Math.random()*22)+'px';
+    rain.appendChild(d); setTimeout(()=>d.remove(),5500); } }
+let toastTimer=null;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3000); }
+
+/* ════════ Boot ════════ */
+document.querySelectorAll('[data-logo]').forEach(e=>e.addEventListener('click',bumpLogo));
+document.querySelectorAll('[data-rules]').forEach(e=>e.addEventListener('click',openRules));
+document.querySelectorAll('[data-host-ask]').forEach(e=>e.addEventListener('click',askHost));
+document.querySelectorAll('[data-taunt]').forEach(e=>e.addEventListener('click',taunt));
+$('#unlockBtn').addEventListener('click', unlock);
+$('#code').addEventListener('keydown', e=>{ if(e.key==='Enter') unlock(); });
+$('#hostBack').addEventListener('click', ()=>showScreen('accueil'));
+$('#modal').addEventListener('click', e=>{ if(e.target.id==='modal') closeModal(); });
+
+const konami=[38,38,40,40,37,39,37,39,66,65]; let kpos=0;
+window.addEventListener('keydown', e=>{ if(e.keyCode===konami[kpos]){ if(++kpos===konami.length){ kpos=0; heartsRain(); toast('💘 Mode parano activé'); } } else kpos=(e.keyCode===konami[0])?1:0; });
+
+if(!(window.crypto && window.crypto.subtle)){ showScreen('unlock'); $('#err').textContent='Ton navigateur bloque le déchiffrement. Ouvre le lien en HTTPS.'; }
+else if(getPayload()){ showScreen('unlock'); $('#code').focus(); }
+else { showScreen('accueil'); }
 </script>
 </body>
 </html>

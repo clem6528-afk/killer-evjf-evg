@@ -40,6 +40,49 @@ out/               ← généré, local, JAMAIS publié : cards.html, qr/*.png, 
 
 ---
 
+## 🎮 Multijoueur : espace joueur, kills, classement
+
+Chaque joueur ouvre son lien/QR + code → **son espace** : sa cible/mission, son défi marié,
+ses actions, et le **classement live**.
+
+- **Kill validé à deux** : le tueur tape « j'ai éliminé X » → X reçoit la demande et **confirme**
+  (ou conteste). À la confirmation, la cible de X est **transmise au tueur, chiffrée de bout en
+  bout (ECDH P-256)** — la base ne voit jamais qui chasse qui. Le tueur gagne **+100** et hérite.
+- **Défi marié** : n'importe qui (même éliminé !) tape « défi marié réussi » → choisit Camille/Alex
+  → le marié **valide** (+40) ou refuse = **GRILLÉ** (+20 pour le marié).
+- **Mission secrète des mariés** : validée par l'orga dans son espace (+50).
+- **Dernier survivant** : couronné par l'orga (+150).
+- **Barème** (modifiable dans `config/game.json` → `meta.scoring`) : kill 100 · défi 40 · GRILLÉ
+  20 · secret 50 · survivant 150.
+
+> **Sans Firebase configuré**, l'appli tourne en **mode hors-ligne** : la carte s'affiche, mais
+> kills/validations/classement sont désactivés. Tout le reste marche.
+
+### Activer le multijoueur (Firebase Realtime Database — gratuit)
+
+1. Va sur https://console.firebase.google.com → **Ajouter un projet** (nom au choix, désactive
+   Google Analytics). Connecte-toi avec un compte Google.
+2. Menu **Build → Realtime Database → Créer une base** → région *europe-west1* → démarrer en
+   **mode test** (lecture/écriture ouvertes ~30 jours : parfait pour un week-end).
+3. Menu ⚙️ **Paramètres du projet → Tes applications → Web (`</>`)** → enregistre l'app →
+   copie l'objet `firebaseConfig` affiché.
+4. Colle les valeurs dans `config/game.json` → `meta.firebase` (surtout `apiKey`, `databaseURL`,
+   `authDomain`, `projectId`, `appId`). **`databaseURL` est obligatoire** (du type
+   `https://xxxx-default-rtdb.europe-west1.firebasedatabase.app`).
+5. Régénère et redéploie :
+   ```bash
+   node generate.mjs
+   git add docs/index.html && git commit -m "Active le multijoueur" && git push
+   ```
+6. Ouvre ton espace organisateur (code `patrondujeu`) → **« Démarrer / Réinitialiser la partie »**
+   pour initialiser le classement. À refaire juste avant le vrai départ (après tes tests).
+
+> La config Firebase n'est PAS secrète (elle est faite pour vivre dans le client) ; la sécurité
+> vient des règles de la base. Pour un week-end, le mode test suffit. La base ne contient jamais
+> les cibles/missions — uniquement scores, statuts vivant/mort et le matériel crypto éphémère.
+
+---
+
 ## 🚀 Mode d'emploi (organisateur)
 
 ### 1. (Re)générer
