@@ -1,0 +1,12 @@
+# ⚠️ NE JAMAIS publier ces fichiers : ils contiennent les assignations EN CLAIR.
+# Si config/game.json finissait sur GitHub Pages, tout le jeu serait lisible en ligne.
+config/game.json
+
+# Sorties générées en local (cartes, QR, feuille maître du host) — jamais publiées.
+out/
+
+# Dépendances
+node_modules/
+
+# Divers OS
+.DS_Store

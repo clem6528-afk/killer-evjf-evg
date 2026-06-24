@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#14101a" />
+<title>KILLER — EVJF / EVG de Camille & Alex</title>
+
+<!--
+   ╔══════════════════════════════════════════════════════════════╗
+   ║   Tiens tiens... on fouille le code source pour trouver les   ║
+   ║   missions et les cibles ?  👀  Jolie tentative.              ║
+   ║   Mauvaise nouvelle : ce fichier ne contient AUCUNE donnée    ║
+   ║   de jeu. Tout est chiffré (AES-GCM) dans le lien perso de    ║
+   ║   chaque joueur, et déchiffrable uniquement avec SON code.    ║
+   ║   Tu peux le coller à n'importe quelle IA : elle ne verra     ║
+   ║   que du charabia. Retourne jouer. 😘                          ║
+   ╚══════════════════════════════════════════════════════════════╝
+-->
+
+<style>
+  :root{
+    --bg:#14101a; --bg2:#1d1726; --ivory:#f6efe4; --gold:#d4af37;
+    --rose:#e8b4c4; --blood:#b3122e; --muted:#9a8fa6; --card:#221a2e;
+    --ok:#3ddc84;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
+    background:radial-gradient(1200px 800px at 50% -10%,#2a2038 0%,var(--bg) 60%);
+    color:var(--ivory); min-height:100dvh; min-height:100vh;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:24px 18px calc(24px + env(safe-area-inset-bottom)); overflow-x:hidden;
+  }
+  .wrap{width:100%; max-width:480px; margin:auto}
+  .screen{display:none; animation:fade .4s ease both}
+  .screen.active{display:block}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  .logo{font-size:54px; text-align:center; cursor:pointer; user-select:none;
+    filter:drop-shadow(0 4px 14px rgba(212,175,55,.25)); transition:transform .15s}
+  .logo:active{transform:scale(.9)}
+  h1{font-size:1.5rem; text-align:center; margin:.4em 0 .1em; letter-spacing:.5px;
+    background:linear-gradient(90deg,var(--gold),#fff6d8,var(--gold));
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
+  .sub{text-align:center; color:var(--rose); font-size:.92rem; margin:0 0 1.4em; letter-spacing:1px}
+  p{line-height:1.55}
+  .lead{text-align:center; color:var(--muted); font-size:.98rem}
+
+  .panel{background:linear-gradient(180deg,var(--bg2),var(--card));
+    border:1px solid rgba(212,175,55,.22); border-radius:18px; padding:22px 20px;
+    box-shadow:0 18px 50px rgba(0,0,0,.45)}
+
+  label{display:block; font-size:.82rem; color:var(--muted); margin:0 0 8px; letter-spacing:.5px}
+  input[type=text],input[type=password]{
+    width:100%; padding:15px 16px; font-size:1.15rem; letter-spacing:1px;
+    background:#0f0b15; color:var(--ivory); border:1.5px solid rgba(212,175,55,.3);
+    border-radius:12px; outline:none; text-align:center}
+  input:focus{border-color:var(--gold)}
+  button.cta{width:100%; margin-top:16px; padding:15px; font-size:1.05rem; font-weight:700;
+    letter-spacing:.5px; color:#1a1320; cursor:pointer; border:none; border-radius:12px;
+    background:linear-gradient(90deg,var(--gold),#f0d878); transition:transform .1s,filter .2s}
+  button.cta:active{transform:scale(.98)} button.cta:hover{filter:brightness(1.06)}
+  button.ghost{background:none; border:1px solid rgba(246,239,228,.25); color:var(--ivory);
+    padding:11px; border-radius:12px; width:100%; margin-top:10px; cursor:pointer; font-size:.92rem}
+  .err{color:var(--blood); text-align:center; font-weight:600; min-height:1.3em; margin:12px 0 0;
+    font-size:.92rem}
+
+  /* ---- Carte joueur ---- */
+  .badge{display:inline-block; font-size:.7rem; letter-spacing:2px; text-transform:uppercase;
+    padding:5px 12px; border-radius:999px; margin-bottom:14px}
+  .badge.kill{background:rgba(179,18,46,.18); color:#ff8094; border:1px solid rgba(179,18,46,.5)}
+  .badge.vip{background:rgba(212,175,55,.16); color:var(--gold); border:1px solid rgba(212,175,55,.5)}
+  .who{font-size:.8rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
+  .target{font-size:2rem; font-weight:800; margin:.1em 0 .5em; color:#fff}
+  .block{background:#0f0b15; border-radius:14px; padding:16px 16px; margin:14px 0;
+    border-left:3px solid var(--blood)}
+  .block.vipblock{border-left-color:var(--gold)}
+  .block .k{font-size:.74rem; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted)}
+  .block .v{font-size:1.08rem; line-height:1.5; margin-top:6px}
+  .heart{color:var(--rose)}
+
+  details{margin-top:14px; background:#0f0b15; border-radius:12px; padding:2px 14px}
+  summary{cursor:pointer; padding:12px 0; font-weight:600; color:var(--gold); list-style:none}
+  summary::-webkit-details-marker{display:none}
+  summary::before{content:"📜 "}
+  details[open] summary::before{content:"📖 "}
+  .rules h3{color:var(--rose); margin:.9em 0 .3em; font-size:1rem}
+  .rules ul{margin:.2em 0 .6em; padding-left:1.2em} .rules li{margin:.25em 0}
+  .rules p{font-size:.95rem}
+
+  .foot{text-align:center; margin-top:22px; font-size:.78rem; color:#5d5468}
+  .foot a{color:#776b86; cursor:pointer; text-decoration:underline dotted}
+
+  /* easter egg overlays */
+  #rain{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:50}
+  .drop{position:absolute; top:-40px; font-size:26px; animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(112vh) rotate(360deg); opacity:.9}}
+  .modal{position:fixed; inset:0; background:rgba(8,5,12,.82); display:none;
+    align-items:center; justify-content:center; z-index:60; padding:24px; backdrop-filter:blur(3px)}
+  .modal.show{display:flex; animation:fade .3s both}
+  .modal .box{max-width:380px; text-align:center; background:linear-gradient(180deg,#2a1730,#1b1226);
+    border:1px solid rgba(232,180,196,.4); border-radius:20px; padding:30px 24px}
+  .modal .box h2{margin:.1em 0 .4em; color:var(--rose)}
+  .toast{position:fixed; left:50%; bottom:30px; transform:translateX(-50%); z-index:70;
+    background:#2a1730; color:var(--ivory); border:1px solid var(--gold); padding:12px 18px;
+    border-radius:999px; font-size:.9rem; opacity:0; transition:opacity .3s}
+  .toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ÉCRAN ACCUEIL (pas de lien perso) -->
+  <section id="accueil" class="screen">
+    <div class="logo" id="logo">🔪💍</div>
+    <h1>KILLER — EVJF / EVG de Camille & Alex</h1>
+    <p class="sub">Génolhac · un week-end · un seul survivant</p>
+    <div class="panel">
+      <p class="lead">Cette page est ta salle de jeu secrète.<br>
+      Pour voir <strong>ta</strong> cible et <strong>ta</strong> mission, ouvre
+      <strong>ton lien personnel</strong> ou scanne <strong>ton QR code</strong> remis par l'organisateur.</p>
+      <button class="ghost" onclick="openRules()">📜 Lire les règles</button>
+      <button class="ghost" onclick="askHost()">🎩 Espace organisateur</button>
+    </div>
+    <p class="foot">Aucune mission n'est stockée ici. Tout est chiffré. <a onclick="taunt()">psst…</a></p>
+  </section>
+
+  <!-- ÉCRAN DÉVERROUILLAGE (lien perso présent) -->
+  <section id="unlock" class="screen">
+    <div class="logo" id="logo2">🔪💍</div>
+    <h1>Ta carte t'attend</h1>
+    <p class="sub">entre ton code secret</p>
+    <div class="panel">
+      <label for="code">Code personnel (sur ta carte / ton QR)</label>
+      <input id="code" type="text" autocomplete="off" autocapitalize="none" autocorrect="off"
+             spellcheck="false" inputmode="text" placeholder="• • • • • •"
+             onkeydown="if(event.key==='Enter')unlock()" />
+      <button class="cta" onclick="unlock()">🔓 Déverrouiller ma mission</button>
+      <p class="err" id="err"></p>
+      <button class="ghost" onclick="openRules()">📜 Lire les règles</button>
+    </div>
+    <p class="foot">Personne d'autre ne peut lire ta carte. Promis. 🤫</p>
+  </section>
+
+  <!-- ÉCRAN CARTE -->
+  <section id="card" class="screen">
+    <div id="cardBody"></div>
+    <details class="rules"><summary>Les règles du jeu</summary>
+      <div class="rulesContent"><h3>🎯 Le but</h3><p>Élimine ta cible secrète en lui faisant accomplir, <strong>sans qu'elle s'en doute</strong>, la mission inscrite sur ta carte. Dès qu'elle l'exécute, elle est « morte » : tu récupères <em>sa</em> cible et <em>sa</em> mission, et tu continues la chasse.</p><h3>☠️ Quand tu réussis</h3><ul><li>Annonce discrètement à ta victime : « tu es éliminé·e » (en privé, jamais devant les autres).</li><li>Elle te donne sa carte (ou son code) : sa cible et sa mission deviennent les tiennes.</li><li>Un·e mort·e ne se déclare <strong>jamais</strong> en public — sinon plus de surprise !</li></ul><h3>🏆 Victoire</h3><p>Deux gagnant·e·s : <strong>le·la dernier·ère survivant·e</strong> ET <strong>celui·celle qui a accumulé le plus de cartes</strong>. Ça peut être la même personne.</p><h3>💍 Les mariés sont intouchables</h3><p>Camille et Alex ne tuent pas et ne peuvent pas être éliminés. Mais <strong>tout le monde</strong> a une <em>mission VIP</em> secrète pour les piéger pendant le week-end (points bonus). Attention : s'ils te prennent en flagrant délit, ta mission VIP est grillée !</p><h3>⏰ Fenêtres de jeu</h3><ul><li>Tentatives autorisées pendant les <strong>temps libres, les repas et la piscine</strong>.</li><li>Jeu <strong>suspendu</strong> pendant le loup-garou, l'escape box et le blindtest (on ne parasite pas ces moments).</li><li><strong>Jamais après minuit.</strong> Du vendredi soir au brunch du dimanche.</li></ul><h3>🤝 Fair-play</h3><p>Une mission doit toujours être <strong>détectable</strong> par la cible : pas de piège fait à son insu. On reste bon enfant, on ne force personne, on rigole.</p></div>
+    </details>
+    <p class="foot">Garde ça pour toi. Bonne chasse. 🔪</p>
+  </section>
+
+  <!-- ÉCRAN ORGANISATEUR -->
+  <section id="host" class="screen">
+    <div class="logo">🎩</div>
+    <h1>Espace organisateur</h1>
+    <p class="sub">mode maître du jeu</p>
+    <div class="panel">
+      <p class="lead">Tu as la <strong>feuille maître</strong> (<code>out/host_sheet.md</code>) avec
+      toutes les cibles, missions et codes. Garde-la précieuse et secrète.</p>
+      <div class="rules rulesContent"><h3>🎯 Le but</h3><p>Élimine ta cible secrète en lui faisant accomplir, <strong>sans qu'elle s'en doute</strong>, la mission inscrite sur ta carte. Dès qu'elle l'exécute, elle est « morte » : tu récupères <em>sa</em> cible et <em>sa</em> mission, et tu continues la chasse.</p><h3>☠️ Quand tu réussis</h3><ul><li>Annonce discrètement à ta victime : « tu es éliminé·e » (en privé, jamais devant les autres).</li><li>Elle te donne sa carte (ou son code) : sa cible et sa mission deviennent les tiennes.</li><li>Un·e mort·e ne se déclare <strong>jamais</strong> en public — sinon plus de surprise !</li></ul><h3>🏆 Victoire</h3><p>Deux gagnant·e·s : <strong>le·la dernier·ère survivant·e</strong> ET <strong>celui·celle qui a accumulé le plus de cartes</strong>. Ça peut être la même personne.</p><h3>💍 Les mariés sont intouchables</h3><p>Camille et Alex ne tuent pas et ne peuvent pas être éliminés. Mais <strong>tout le monde</strong> a une <em>mission VIP</em> secrète pour les piéger pendant le week-end (points bonus). Attention : s'ils te prennent en flagrant délit, ta mission VIP est grillée !</p><h3>⏰ Fenêtres de jeu</h3><ul><li>Tentatives autorisées pendant les <strong>temps libres, les repas et la piscine</strong>.</li><li>Jeu <strong>suspendu</strong> pendant le loup-garou, l'escape box et le blindtest (on ne parasite pas ces moments).</li><li><strong>Jamais après minuit.</strong> Du vendredi soir au brunch du dimanche.</li></ul><h3>🤝 Fair-play</h3><p>Une mission doit toujours être <strong>détectable</strong> par la cible : pas de piège fait à son insu. On reste bon enfant, on ne force personne, on rigole.</p></div>
+      <button class="ghost" onclick="showScreen('accueil')">← Retour</button>
+    </div>
+  </section>
+
+</div>
+
+<div id="rain"></div>
+
+<div class="modal" id="loveModal" onclick="this.classList.remove('show')">
+  <div class="box">
+    <div style="font-size:46px">💞</div>
+    <h2>Camille & Alex</h2>
+    <p>Tout ce petit monde a fait des kilomètres jusqu'en Lozère pour une seule raison :
+    vous. Que ce week-end soit à la hauteur de votre histoire — bruyant, tendre, et un peu
+    n'importe quoi. 🥂</p>
+    <p style="color:var(--muted);font-size:.82rem">(touche pour fermer)</p>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  "use strict";
+  const ITER = 250000;
+  const HOSTCODE = "patrondujeu";
+
+  // ───────── Faux indices pour les curieux (n'apparaissent jamais en jeu) ─────────
+  const _leurres = [
+    "Mission : convaincre la cible que la Terre est plate.",
+    "Cible : le chat du gîte. Mission : lui apprendre Mario Kart.",
+    "Si tu lis ça, c'est que tu triches. Va te dénoncer à l'organisateur. 😘"
+  ];
+  function taunt(){ toast("Rien à gratter ici 😏 tout est chiffré."); }
+
+  // ───────── Navigation ─────────
+  function showScreen(id){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    window.scrollTo(0,0);
+  }
+
+  // ───────── Crypto ─────────
+  function b64urlToBytes(s){
+    s = s.replace(/-/g,'+').replace(/_/g,'/');
+    while(s.length % 4) s += '=';
+    const bin = atob(s);
+    const out = new Uint8Array(bin.length);
+    for(let i=0;i<bin.length;i++) out[i] = bin.charCodeAt(i);
+    return out;
+  }
+  async function decryptCard(code, payloadB64){
+    const packed = b64urlToBytes(payloadB64);
+    const salt = packed.slice(0,16), iv = packed.slice(16,28), data = packed.slice(28);
+    const km = await crypto.subtle.importKey(
+      'raw', new TextEncoder().encode(code), {name:'PBKDF2'}, false, ['deriveKey']);
+    const key = await crypto.subtle.deriveKey(
+      {name:'PBKDF2', salt, iterations:ITER, hash:'SHA-256'},
+      km, {name:'AES-GCM', length:256}, false, ['decrypt']);
+    const plain = await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, data);
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+
+  function getPayload(){
+    const h = location.hash.replace(/^#/,'').trim();
+    return h.length ? h : null;
+  }
+
+  // ───────── Déverrouillage ─────────
+  async function unlock(){
+    const input = document.getElementById('code');
+    const raw = input.value.trim();
+    const err = document.getElementById('err');
+    err.textContent = "";
+    if(!raw){ err.textContent = "Entre ton code 🙂"; return; }
+
+    // easter egg : mot secret
+    if(/^mari[ée]s?$/i.test(raw)){ heartsRain(); toast("💍 vous d'abord 😘"); }
+
+    // code organisateur
+    if(raw === HOSTCODE){ showScreen('host'); return; }
+
+    const payload = getPayload();
+    if(!payload){ err.textContent = "Aucune carte dans ce lien. Ouvre TON lien perso."; return; }
+
+    try{
+      const data = await decryptCard(raw, payload);
+      renderCard(data);
+      showScreen('card');
+    }catch(e){
+      err.textContent = "Mauvais code, ou ce n'est pas ta carte. Réessaie.";
+      input.select();
+    }
+  }
+
+  // ───────── Rendu carte ─────────
+  function renderCard(d){
+    const el = document.getElementById('cardBody');
+    if(d.role === 'marie'){
+      el.innerHTML = `
+        <div class="panel">
+          <span class="badge vip">💍 Cible VIP — intouchable</span>
+          <div class="who">${d.name}</div>
+          <div class="target">Tu es ${/camille/i.test(d.name)?'la mariée 👰':'le marié 🤵'}</div>
+          <div class="block vipblock">
+            <div class="k">Ton rôle</div>
+            <div class="v">${d.marieText||''}</div>
+          </div>
+          <div class="block">
+            <div class="k">🤫 Ta mission secrète</div>
+            <div class="v">${d.secret||''}</div>
+          </div>
+        </div>`;
+    }else{
+      el.innerHTML = `
+        <div class="panel">
+          <span class="badge kill">☠️ Contrat actif</span>
+          <div class="who">Ta cible</div>
+          <div class="target">${escapeHtml(d.target)}</div>
+          <div class="block">
+            <div class="k">🔪 Pour l'éliminer</div>
+            <div class="v">${escapeHtml(d.mission)}</div>
+          </div>
+          <div class="block vipblock">
+            <div class="k">⭐ ${escapeHtml((d.vip||'').replace(/^Mission VIP\s*:\s*/i,'Mission VIP : '))}</div>
+          </div>
+        </div>`;
+    }
+  }
+  function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));}
+
+  // ───────── Règles / organisateur ─────────
+  function openRules(){
+    const r = document.querySelector('#card .rulesContent') || document.querySelector('.rulesContent');
+    alertModal(r ? r.innerHTML : "Règles indisponibles.");
+  }
+  function alertModal(html){
+    const m = document.getElementById('loveModal');
+    m.querySelector('.box').innerHTML =
+      `<div class="rules" style="text-align:left">${html}</div>
+       <p style="color:var(--muted);font-size:.82rem;text-align:center;margin-top:14px">(touche pour fermer)</p>`;
+    m.classList.add('show');
+  }
+  function askHost(){
+    const c = prompt("Code organisateur :");
+    if(c && c.trim() === HOSTCODE) showScreen('host');
+    else if(c) toast("Code organisateur incorrect.");
+  }
+
+  // ───────── Easter eggs ─────────
+  let logoClicks = 0, logoTimer = null;
+  function bumpLogo(){
+    logoClicks++;
+    clearTimeout(logoTimer);
+    logoTimer = setTimeout(()=>logoClicks=0, 1400);
+    if(logoClicks >= 7){
+      logoClicks = 0; heartsRain();
+      document.getElementById('loveModal').classList.add('show');
+      // restore love content (openRules may have overwritten it)
+      const box = document.querySelector('#loveModal .box');
+      box.innerHTML = `<div style="font-size:46px">💞</div><h2>Camille &amp; Alex</h2>
+        <p>Tout ce petit monde a fait des kilomètres jusqu'en Lozère pour une seule raison :
+        vous. Que ce week-end soit à la hauteur de votre histoire — bruyant, tendre, et un peu
+        n'importe quoi. 🥂</p>
+        <p style="color:var(--muted);font-size:.82rem">(touche pour fermer)</p>`;
+    }
+  }
+  function heartsRain(){
+    const rain = document.getElementById('rain');
+    const emo = ['💍','❤️','🔪','🥂','💞','👰','🤵','🌶️'];
+    for(let i=0;i<40;i++){
+      const d = document.createElement('div');
+      d.className = 'drop';
+      d.textContent = emo[(Math.random()*emo.length)|0];
+      d.style.left = (Math.random()*100)+'vw';
+      d.style.animationDuration = (2.5 + Math.random()*2.5)+'s';
+      d.style.animationDelay = (Math.random()*0.8)+'s';
+      d.style.fontSize = (18 + Math.random()*22)+'px';
+      rain.appendChild(d);
+      setTimeout(()=>d.remove(), 5500);
+    }
+  }
+  let toastTimer=null;
+  function toast(msg){
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),2600);
+  }
+
+  // Konami code
+  const konami = [38,38,40,40,37,39,37,39,66,65];
+  let kpos = 0;
+  window.addEventListener('keydown', e=>{
+    if(e.keyCode === konami[kpos]){ if(++kpos === konami.length){ kpos=0; heartsRain(); toast("💘 Mode parano activé"); } }
+    else kpos = (e.keyCode === konami[0]) ? 1 : 0;
+  });
+
+  // ───────── Boot ─────────
+  document.getElementById('logo').addEventListener('click', bumpLogo);
+  document.getElementById('logo2').addEventListener('click', bumpLogo);
+  if(getPayload()){ showScreen('unlock'); document.getElementById('code').focus(); }
+  else { showScreen('accueil'); }
+  if(!(window.crypto && window.crypto.subtle)){
+    document.getElementById('err') && (document.getElementById('err').textContent =
+      "Ton navigateur bloque le déchiffrement. Ouvre le lien en HTTPS.");
+  }
+</script>
+</body>
+</html>

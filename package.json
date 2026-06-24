@@ -1,0 +1,14 @@
+{
+  "name": "killer-evjf-evg",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Jeu du Killer (fil rouge) pour l'EVJF/EVG de Camille & Alex — appli web chiffrée, sans données en clair.",
+  "scripts": {
+    "build": "node generate.mjs",
+    "serve": "node --eval \"import('node:http').then(()=>0)\" || true"
+  },
+  "dependencies": {
+    "qrcode": "^1.5.4"
+  }
+}
