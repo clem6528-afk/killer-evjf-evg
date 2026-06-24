@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#14101a" />
+<meta name="theme-color" content="#f4eee5" />
 <title>__TITLE__</title>
 
 <!--
@@ -18,132 +18,299 @@
 -->
 
 <style>
+  /* ════════════════════════════════════════════════════════════════
+     KILLER · EVJF/EVG — refonte visuelle « papeterie de mariage, clean »
+     Direction : ivoire clair, surfaces blanches nettes, filets d'or fins,
+     encre aubergine, rouge sang comme seul accent « assassin ».
+     100 % autonome (system fonts + emojis). Logique JS plus bas inchangée.
+     ════════════════════════════════════════════════════════════════ */
+
   :root{
-    --bg:#14101a; --bg2:#1d1726; --ivory:#f6efe4; --gold:#d4af37;
-    --rose:#e8b4c4; --blood:#b3122e; --muted:#9a8fa6; --card:#221a2e;
-    --ok:#3ddc84; --wait:#e0a93b;
+    /* Surfaces claires */
+    --bg:#f4eee5;          /* papier ivoire */
+    --bg2:#efe7da;
+    --surface:#fffdfa;     /* carte blanche chaude */
+    --surface-soft:#faf5ec;/* fond de bloc très doux */
+    /* Encre */
+    --ink:#241c2e;         /* aubergine profond, texte principal */
+    --ink-soft:#5a5064;
+    --muted:#938a9e;       /* gris chaud */
+    /* Accents */
+    --gold:#a9863a;        /* or antique lisible sur clair */
+    --gold-soft:#c2a865;
+    --rose:#c06d8a;        /* rose poudré soutenu */
+    --blood:#b3122e;       /* rouge sang */
+    --ok:#2e9e63;          /* vert vivant, calme */
+    /* Lignes */
+    --line:rgba(36,28,46,.12);
+    --line-soft:rgba(36,28,46,.07);
+    --gold-line:rgba(169,134,58,.4);
+    /* Typo */
+    --serif:"Didot","Bodoni 72","Bodoni MT","Hoefler Text",Garamond,Georgia,"Times New Roman",serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
   }
+
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;padding:0}
   body{
-    font-family:"Avenir Next","Segoe UI",system-ui,-apple-system,sans-serif;
-    background:radial-gradient(1200px 800px at 50% -10%,#2a2038 0%,var(--bg) 60%);
-    color:var(--ivory); min-height:100dvh; min-height:100vh;
+    font-family:var(--sans); color:var(--ink);
+    background:var(--bg);
+    background-image:radial-gradient(900px 600px at 50% -8%, #faf6ee 0%, var(--bg) 62%);
+    min-height:100dvh; min-height:100vh;
     display:flex; flex-direction:column; align-items:center;
-    padding:24px 16px calc(28px + env(safe-area-inset-bottom)); overflow-x:hidden;
+    padding:clamp(22px,5vw,34px) 18px calc(34px + env(safe-area-inset-bottom));
+    padding-top:calc(clamp(22px,5vw,34px) + env(safe-area-inset-top));
+    overflow-x:hidden;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
   }
   .wrap{width:100%; max-width:480px; margin:auto}
-  .screen{display:none; animation:fade .4s ease both}
+
+  /* ── Écrans ───────────────────────────────────────────────── */
+  .screen{display:none; animation:fade .45s cubic-bezier(.2,.7,.2,1) both}
   .screen.active{display:block}
   @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 
-  .logo{font-size:50px; text-align:center; cursor:pointer; user-select:none;
-    filter:drop-shadow(0 4px 14px rgba(212,175,55,.25)); transition:transform .15s}
-  .logo:active{transform:scale(.9)}
-  h1{font-size:1.45rem; text-align:center; margin:.4em 0 .1em; letter-spacing:.5px;
-    background:linear-gradient(90deg,var(--gold),#fff6d8,var(--gold));
-    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent}
-  .sub{text-align:center; color:var(--rose); font-size:.9rem; margin:0 0 1.3em; letter-spacing:1px}
-  p{line-height:1.55}
-  .lead{text-align:center; color:var(--muted); font-size:.97rem}
+  /* ── Logo médaillon ───────────────────────────────────────── */
+  .logo{
+    width:78px; height:78px; margin:4px auto 6px; display:flex; align-items:center;
+    justify-content:center; font-size:33px; cursor:pointer; user-select:none;
+    border-radius:999px; position:relative; background:var(--surface);
+    box-shadow:0 1px 0 rgba(255,255,255,.9) inset, 0 6px 18px rgba(36,28,46,.08);
+    border:1px solid var(--line);
+    transition:transform .15s ease;
+  }
+  .logo::after{ content:""; position:absolute; inset:5px; border-radius:999px;
+    border:1px solid var(--gold-line); }
+  .logo:active{transform:scale(.93)}
 
-  .panel{background:linear-gradient(180deg,var(--bg2),var(--card));
-    border:1px solid rgba(212,175,55,.22); border-radius:18px; padding:20px 18px; margin-bottom:14px;
-    box-shadow:0 18px 50px rgba(0,0,0,.45)}
+  /* ── Titres ───────────────────────────────────────────────── */
+  h1{
+    font-family:var(--serif); font-weight:500; color:var(--ink);
+    font-size:clamp(1.65rem,6.6vw,2.1rem); text-align:center; line-height:1.12;
+    margin:.5em 0 .14em; letter-spacing:.2px;
+  }
+  .sub{
+    text-align:center; color:var(--rose); font-size:.7rem; font-weight:700;
+    text-transform:uppercase; letter-spacing:3.2px; margin:0 0 1.3em;
+  }
+  p{line-height:1.6}
+  .lead{text-align:center; color:var(--ink-soft); font-size:1rem; line-height:1.62}
+  .lead strong{color:var(--ink); font-weight:600}
 
-  label{display:block; font-size:.82rem; color:var(--muted); margin:0 0 8px; letter-spacing:.5px}
+  /* Filet ornemental ◆ */
+  .divider{display:flex; align-items:center; gap:13px; color:var(--gold);
+    margin:6px auto 16px; max-width:230px}
+  .divider::before,.divider::after{content:""; flex:1; height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold-line))}
+  .divider::after{background:linear-gradient(90deg,var(--gold-line),transparent)}
+  .divider span{font-size:.62rem; opacity:.8}
+
+  /* ── Panneaux ─────────────────────────────────────────────── */
+  .panel{
+    position:relative; background:var(--surface);
+    border:1px solid var(--line); border-radius:16px; padding:22px 20px; margin-bottom:14px;
+    box-shadow:0 1px 2px rgba(36,28,46,.04), 0 10px 30px rgba(36,28,46,.05);
+  }
+
+  /* ── Champs ───────────────────────────────────────────────── */
+  label{display:block; font-size:.68rem; color:var(--muted); margin:0 0 9px;
+    letter-spacing:1.4px; text-transform:uppercase; font-weight:600}
   input[type=text]{
-    width:100%; padding:15px 16px; font-size:1.15rem; letter-spacing:1px;
-    background:#0f0b15; color:var(--ivory); border:1.5px solid rgba(212,175,55,.3);
-    border-radius:12px; outline:none; text-align:center}
-  input:focus{border-color:var(--gold)}
-  button{font-family:inherit}
-  button.cta{width:100%; margin-top:14px; padding:15px; font-size:1.05rem; font-weight:700;
-    letter-spacing:.5px; color:#1a1320; cursor:pointer; border:none; border-radius:12px;
-    background:linear-gradient(90deg,var(--gold),#f0d878); transition:transform .1s,filter .2s}
-  button.cta:active{transform:scale(.98)} button.cta:hover{filter:brightness(1.06)}
-  button.ghost{background:none; border:1px solid rgba(246,239,228,.25); color:var(--ivory);
-    padding:11px; border-radius:12px; width:100%; margin-top:10px; cursor:pointer; font-size:.92rem}
-  .err{color:var(--blood); text-align:center; font-weight:600; min-height:1.2em; margin:10px 0 0; font-size:.9rem}
+    width:100%; padding:16px; font-size:1.25rem; letter-spacing:3px; font-weight:600;
+    font-family:var(--sans); background:var(--surface-soft); color:var(--ink);
+    border:1px solid var(--line); border-radius:12px; outline:none; text-align:center;
+    transition:border-color .2s, box-shadow .2s;
+  }
+  input[type=text]::placeholder{color:#c3b9c9; letter-spacing:6px}
+  input:focus{border-color:var(--gold); box-shadow:0 0 0 3px rgba(169,134,58,.14)}
 
-  .btn-act{width:100%; margin-top:10px; padding:15px; border-radius:13px; border:none; cursor:pointer;
-    font-size:1.02rem; font-weight:700; letter-spacing:.3px; color:#fff; min-height:52px;
-    display:flex; align-items:center; justify-content:center; gap:8px; transition:transform .1s,filter .2s}
-  .btn-act:active{transform:scale(.98)}
-  .btn-kill{background:linear-gradient(90deg,#8c0f24,#d11a3a)}
-  .btn-vip{background:linear-gradient(90deg,#a9871f,#e0bb45); color:#241a05}
-  .btn-ok{background:linear-gradient(90deg,#1f7a4d,#3ddc84); color:#06210f}
-  .btn-no{background:linear-gradient(90deg,#5a4150,#7a5366)}
-  .btn-act[disabled]{opacity:.45; cursor:not-allowed; filter:grayscale(.4)}
-  .row2{display:flex; gap:10px} .row2 .btn-act{margin-top:10px}
+  button{font-family:var(--sans)}
+  /* CTA principal (or plein, sobre) */
+  button.cta{
+    width:100%; margin-top:16px; padding:16px; font-size:1.05rem; font-weight:700;
+    letter-spacing:.3px; color:#fffdf6; cursor:pointer; border:none; border-radius:12px;
+    background:var(--gold);
+    box-shadow:0 4px 14px rgba(169,134,58,.22);
+    transition:transform .1s, filter .2s;
+  }
+  button.cta:active{transform:scale(.985)}
+  button.cta:hover{filter:brightness(1.04)}
 
-  .badge{display:inline-block; font-size:.68rem; letter-spacing:2px; text-transform:uppercase;
-    padding:5px 12px; border-radius:999px; margin-bottom:12px}
-  .badge.kill{background:rgba(179,18,46,.18); color:#ff8094; border:1px solid rgba(179,18,46,.5)}
-  .badge.vip{background:rgba(212,175,55,.16); color:var(--gold); border:1px solid rgba(212,175,55,.5)}
-  .pill{display:inline-block; font-size:.72rem; padding:4px 11px; border-radius:999px; font-weight:700; letter-spacing:.5px}
-  .pill.alive{background:rgba(61,220,132,.15); color:var(--ok); border:1px solid rgba(61,220,132,.45)}
-  .pill.dead{background:rgba(179,18,46,.18); color:#ff8094; border:1px solid rgba(179,18,46,.5)}
-  .who{font-size:.78rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase}
-  .target{font-size:1.9rem; font-weight:800; margin:.1em 0 .4em; color:#fff; line-height:1.1}
-  .block{background:#0f0b15; border-radius:14px; padding:14px 14px; margin:12px 0; border-left:3px solid var(--blood)}
+  /* Boutons fantômes (contour fin) */
+  button.ghost{
+    background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    padding:13px; border-radius:12px; width:100%; margin-top:10px; cursor:pointer;
+    font-size:.92rem; font-weight:600; letter-spacing:.2px;
+    transition:border-color .2s, background .2s;
+  }
+  button.ghost:hover{border-color:var(--gold-line); background:var(--surface-soft)}
+
+  .err{color:var(--blood); text-align:center; font-weight:600; min-height:1.2em;
+    margin:12px 0 0; font-size:.9rem}
+
+  /* ── Boutons d'action (gros, tactiles ≥52px) ──────────────── */
+  .btn-act{
+    width:100%; margin-top:11px; padding:16px; border-radius:13px; border:none; cursor:pointer;
+    font-size:1rem; font-weight:700; letter-spacing:.2px; color:#fff; min-height:54px;
+    display:flex; align-items:center; justify-content:center; gap:9px;
+    box-shadow:0 4px 14px rgba(36,28,46,.08);
+    transition:transform .1s, filter .2s;
+  }
+  .btn-act:active{transform:scale(.985)}
+  .btn-act:hover{filter:brightness(1.05)}
+  .btn-kill{background:var(--blood)}
+  .btn-vip{background:var(--gold); color:#fffdf6}
+  .btn-ok{background:var(--ok)}
+  .btn-no{background:#fff; color:var(--ink); border:1px solid var(--line); box-shadow:none}
+  .btn-no:hover{filter:none; border-color:var(--muted)}
+  /* État « en attente / désactivé » : sobre et clair */
+  .btn-act[disabled]{
+    cursor:progress; color:var(--muted); background:var(--surface-soft); filter:none;
+    border:1px solid var(--line); box-shadow:none; font-weight:600;
+  }
+  .row2{display:flex; gap:10px} .row2 .btn-act{margin-top:11px; flex:1}
+
+  /* ── Badges & pills ───────────────────────────────────────── */
+  .badge{display:inline-block; font-size:.62rem; letter-spacing:2.4px; text-transform:uppercase;
+    font-weight:700; padding:6px 13px; border-radius:999px; margin-bottom:14px}
+  .badge.kill{background:rgba(179,18,46,.08); color:var(--blood); border:1px solid rgba(179,18,46,.3)}
+  .badge.vip{background:rgba(169,134,58,.1); color:var(--gold); border:1px solid var(--gold-line)}
+
+  .pill{display:inline-flex; align-items:center; gap:5px; font-size:.66rem; padding:6px 12px;
+    border-radius:999px; font-weight:700; letter-spacing:1px; text-transform:uppercase}
+  .pill.alive{background:rgba(46,158,99,.1); color:var(--ok); border:1px solid rgba(46,158,99,.35)}
+  .pill.dead{background:rgba(179,18,46,.08); color:var(--blood); border:1px solid rgba(179,18,46,.3)}
+
+  /* ── En-tête espace ───────────────────────────────────────── */
+  .hd{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px}
+  .who{font-size:.64rem; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-weight:700}
+  .hd .who{margin:0 0 1px}
+
+  /* ── Carte cible « carte à jouer » ────────────────────────── */
+  .cardface{position:relative; overflow:hidden; padding:24px 20px 20px}
+  .cardface .corner{position:absolute; font-size:.95rem; opacity:.45; line-height:1}
+  .cardface .corner.tl{top:14px; left:15px}
+  .cardface .corner.br{bottom:14px; right:15px; transform:rotate(180deg)}
+  .cardface.kill{border-color:rgba(179,18,46,.22)}
+  .cardface.kill::before{content:""; position:absolute; left:0; right:0; top:0; height:4px;
+    background:var(--blood)}
+  .cardface.vip{border-color:var(--gold-line); background:linear-gradient(180deg,#fffdf6,var(--surface))}
+  .cardface.vip::before{content:""; position:absolute; left:0; right:0; top:0; height:4px;
+    background:var(--gold)}
+  .cf-head{display:flex; justify-content:center; margin-top:4px}
+  .cardface .who{text-align:center}
+  .target{
+    font-family:var(--serif); font-weight:500; text-align:center; color:var(--ink);
+    font-size:clamp(2.2rem,11vw,3rem); line-height:1.04; margin:.1em 0 .12em;
+    animation:reveal .5s cubic-bezier(.2,.8,.2,1) both;
+  }
+  @keyframes reveal{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+  .cf-rule{height:1px; margin:2px auto 16px; max-width:150px;
+    background:linear-gradient(90deg,transparent,var(--gold-line),transparent)}
+  .cardface.kill .cf-rule{background:linear-gradient(90deg,transparent,rgba(179,18,46,.35),transparent)}
+  /* carte d'un·e éliminé·e */
+  .cardface.isdead{opacity:.72}
+  .cardface.isdead .target{color:var(--muted); text-decoration:line-through}
+
+  /* ── Blocs mission / défi ─────────────────────────────────── */
+  .block{background:var(--surface-soft); border-radius:12px; padding:14px 15px;
+    margin:12px 0; border-left:3px solid var(--blood)}
   .block.vipblock{border-left-color:var(--gold)}
-  .block .k{font-size:.72rem; letter-spacing:1.3px; text-transform:uppercase; color:var(--muted)}
-  .block .v{font-size:1.05rem; line-height:1.5; margin-top:5px}
+  .block .k{font-size:.62rem; letter-spacing:1.2px; text-transform:uppercase; color:var(--muted);
+    font-weight:700; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
+  .block .v{font-size:1.02rem; line-height:1.5; margin-top:7px; color:var(--ink)}
+  /* puce points */
+  .pts{display:inline-block; font-size:.62rem; font-weight:700; letter-spacing:.4px;
+    padding:3px 8px; border-radius:999px; color:var(--blood);
+    background:rgba(179,18,46,.08); border:1px solid rgba(179,18,46,.25)}
+  .pts.gold{color:var(--gold); background:rgba(169,134,58,.1); border-color:var(--gold-line)}
 
-  .lb{margin-top:6px}
-  .lb-row{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:10px; margin:5px 0;
-    background:#0f0b15; font-size:.95rem}
-  .lb-row.me{background:rgba(212,175,55,.12); border:1px solid rgba(212,175,55,.4)}
-  .lb-rank{width:26px; text-align:center; font-weight:800; color:var(--gold)}
-  .lb-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap}
-  .lb-name.gone{color:var(--muted); text-decoration:line-through}
-  .lb-pts{font-weight:800} .lb-kills{color:var(--muted); font-size:.82rem; margin-left:2px}
+  /* ── Classement ───────────────────────────────────────────── */
+  .lb{margin-top:4px}
+  .lb-row{display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:11px;
+    margin:6px 0; background:var(--surface-soft); font-size:.96rem; border:1px solid var(--line-soft)}
+  .lb-row.me{background:rgba(169,134,58,.08); border-color:var(--gold-line)}
+  .lb-rank{width:28px; text-align:center; font-weight:700; color:var(--gold); font-size:1.05rem}
+  .lb-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-weight:600}
+  .lb-name.gone{color:var(--muted); text-decoration:line-through; font-weight:400}
+  .lb-pts{font-weight:600; font-family:var(--serif); font-size:1.2rem; color:var(--ink)}
+  .lb-kills{color:var(--muted); font-size:.78rem; margin-left:2px; font-family:var(--sans); font-weight:400}
 
-  .inbox-card{background:#0f0b15; border:1px solid rgba(224,169,59,.45); border-radius:13px;
-    padding:13px 14px; margin:10px 0; animation:fade .3s both}
-  .inbox-card .t{font-weight:700; margin-bottom:4px}
-  .inbox-card .d{font-size:.9rem; color:var(--muted); margin-bottom:8px}
+  /* ── Boîte de réception ───────────────────────────────────── */
+  .inbox-card{background:var(--surface); border:1px solid var(--gold-line); border-radius:14px;
+    padding:15px; margin:11px 0; animation:fade .35s both;
+    box-shadow:0 6px 20px rgba(169,134,58,.08)}
+  .inbox-card .t{font-weight:700; margin-bottom:5px; font-size:1rem; color:var(--ink)}
+  .inbox-card .d{font-size:.9rem; color:var(--ink-soft); margin-bottom:10px; line-height:1.5}
 
-  details{margin-top:6px; background:#0f0b15; border-radius:12px; padding:2px 14px}
-  summary{cursor:pointer; padding:12px 0; font-weight:600; color:var(--gold); list-style:none}
+  /* ── Détails / règles ─────────────────────────────────────── */
+  details{margin-top:6px; background:var(--surface); border-radius:13px; padding:2px 16px;
+    border:1px solid var(--line)}
+  summary{cursor:pointer; padding:14px 0; font-weight:700; color:var(--gold);
+    list-style:none; letter-spacing:.2px}
   summary::-webkit-details-marker{display:none} summary::before{content:"📜 "}
   details[open] summary::before{content:"📖 "}
-  .rules h3{color:var(--rose); margin:.9em 0 .3em; font-size:1rem}
-  .rules ul{margin:.2em 0 .6em; padding-left:1.2em} .rules li{margin:.25em 0}
-  .rules p{font-size:.94rem}
+  .rules h3{font-family:var(--serif); color:var(--ink); margin:1em 0 .3em; font-size:1.08rem; font-weight:500}
+  .rules ul{margin:.2em 0 .7em; padding-left:1.2em} .rules li{margin:.3em 0; line-height:1.5; color:var(--ink-soft)}
+  .rules p{font-size:.95rem; line-height:1.6; color:var(--ink-soft)}
+  .rules strong{color:var(--ink)}
+  .rules code{background:var(--surface-soft); padding:2px 6px; border-radius:6px; font-size:.85em}
 
-  .notice{font-size:.82rem; color:var(--muted); text-align:center; padding:10px; border:1px dashed rgba(154,143,166,.4);
-    border-radius:10px; margin-top:8px}
-  .hd{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
-  .hd .who{margin:0}
-  h2.sec{font-size:1rem; color:var(--rose); margin:18px 0 6px; letter-spacing:.5px}
-  .foot{text-align:center; margin-top:18px; font-size:.78rem; color:#5d5468}
-  .foot a{color:#776b86; cursor:pointer; text-decoration:underline dotted}
+  /* ── Divers ───────────────────────────────────────────────── */
+  .notice{font-size:.84rem; color:var(--ink-soft); text-align:center; padding:13px; line-height:1.5;
+    border:1px dashed var(--line); border-radius:11px; margin-top:10px; background:var(--surface-soft)}
+  h2.sec{font-family:var(--serif); font-size:1.18rem; color:var(--ink); font-weight:500;
+    margin:20px 0 8px; letter-spacing:.2px}
+  .foot{text-align:center; margin-top:22px; font-size:.78rem; color:var(--muted)}
+  .foot a{color:var(--gold); cursor:pointer; text-decoration:underline dotted}
 
+  /* ── Pluie d'emojis (easter egg) ──────────────────────────── */
   #rain{position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:50}
   .drop{position:absolute; top:-40px; font-size:26px; animation:fall linear forwards}
   @keyframes fall{to{transform:translateY(112vh) rotate(360deg); opacity:.9}}
-  .modal{position:fixed; inset:0; background:rgba(8,5,12,.82); display:none;
+
+  /* ── Modale ───────────────────────────────────────────────── */
+  .modal{position:fixed; inset:0; background:rgba(36,28,46,.4); display:none;
     align-items:center; justify-content:center; z-index:60; padding:24px; backdrop-filter:blur(3px)}
   .modal.show{display:flex; animation:fade .3s both}
-  .modal .box{max-width:380px; width:100%; text-align:center; background:linear-gradient(180deg,#2a1730,#1b1226);
-    border:1px solid rgba(232,180,196,.4); border-radius:20px; padding:26px 22px}
-  .modal .box h2{margin:.1em 0 .4em; color:var(--rose)}
-  .toast{position:fixed; left:50%; bottom:28px; transform:translateX(-50%); z-index:70; max-width:90vw;
-    background:#2a1730; color:var(--ivory); border:1px solid var(--gold); padding:12px 18px;
-    border-radius:999px; font-size:.9rem; opacity:0; transition:opacity .3s; text-align:center}
-  .toast.show{opacity:1}
-  @media (prefers-reduced-motion: reduce){ .drop{display:none} .screen{animation:none} }
+  .modal .box{max-width:380px; width:100%; text-align:center; background:var(--surface);
+    border:1px solid var(--line); border-radius:18px; padding:28px 24px;
+    box-shadow:0 24px 60px rgba(36,28,46,.22);
+    animation:reveal .35s cubic-bezier(.2,.8,.2,1) both}
+  .modal .box h2{font-family:var(--serif); font-weight:500; margin:.15em 0 .45em; color:var(--ink)}
+  .modal .box p{color:var(--ink-soft); line-height:1.6}
+
+  /* ── Toast ────────────────────────────────────────────────── */
+  .toast{position:fixed; left:50%; bottom:calc(28px + env(safe-area-inset-bottom));
+    transform:translateX(-50%) translateY(8px); z-index:70; max-width:90vw;
+    background:var(--ink); color:#fbf6ee; border:1px solid rgba(255,255,255,.08);
+    padding:13px 20px; border-radius:999px; font-size:.9rem; font-weight:500;
+    opacity:0; transition:opacity .3s, transform .3s; text-align:center;
+    box-shadow:0 12px 30px rgba(36,28,46,.25)}
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ── Accessibilité : focus clavier visible ────────────────── */
+  a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible,
+  [tabindex]:focus-visible{
+    outline:2px solid var(--gold); outline-offset:3px; border-radius:8px;
+  }
+
+  /* ── Mouvement réduit : on coupe les animations ───────────── */
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important}
+    #rain, .drop{display:none}
+  }
 </style>
 </head>
 <body>
 <div class="wrap">
 
+  <!-- ════════ Accueil ════════ -->
   <section id="accueil" class="screen">
     <div class="logo" data-logo>🔪💍</div>
     <h1>__TITLE__</h1>
     <p class="sub">__SUBTITLE__</p>
+    <div class="divider"><span>◆</span></div>
     <div class="panel">
       <p class="lead">Pour rejoindre <strong>ton espace</strong>, ouvre <strong>ton lien personnel</strong>
       ou scanne <strong>ton QR code</strong> remis par l'organisateur, puis entre ton code.</p>
@@ -153,12 +320,14 @@
     <p class="foot">Aucune mission n'est stockée ici. <a data-taunt>psst…</a></p>
   </section>
 
+  <!-- ════════ Déverrouillage ════════ -->
   <section id="unlock" class="screen">
     <div class="logo" data-logo>🔪💍</div>
     <h1>Ton espace t'attend</h1>
     <p class="sub">entre ton code secret</p>
+    <div class="divider"><span>◆</span></div>
     <div class="panel">
-      <label for="code">Code personnel (sur ta carte / ton QR)</label>
+      <label for="code">Code personnel · sur ta carte ou ton QR</label>
       <input id="code" type="text" autocomplete="off" autocapitalize="none" autocorrect="off"
              spellcheck="false" placeholder="• • • • • •" />
       <button class="cta" id="unlockBtn">🔓 Entrer dans mon espace</button>
@@ -168,9 +337,10 @@
     <p class="foot">Personne d'autre ne peut lire ta carte. 🤫</p>
   </section>
 
+  <!-- ════════ Espace joueur ════════ -->
   <section id="space" class="screen">
     <div class="hd">
-      <div><div class="who">Ton espace</div><div id="spaceName" style="font-weight:800;font-size:1.1rem"></div></div>
+      <div><div class="who">Ton espace</div><div id="spaceName" style="font-family:var(--serif);font-weight:500;font-size:1.5rem;line-height:1.1"></div></div>
       <span id="spaceStatus" class="pill alive">● en vie</span>
     </div>
     <div id="spaceCard"></div>
@@ -187,10 +357,12 @@
     <p class="foot">Garde ça pour toi. Bonne chasse. 🔪</p>
   </section>
 
+  <!-- ════════ Espace organisateur ════════ -->
   <section id="host" class="screen">
     <div class="logo">🎩</div>
     <h1>Espace organisateur</h1>
     <p class="sub">maître du jeu</p>
+    <div class="divider"><span>◆</span></div>
     <div id="hostBody"></div>
     <details class="rules"><summary>Les règles du jeu</summary>
       <div class="rulesContent">__RULES_HTML__</div>
@@ -305,20 +477,25 @@ function renderSpace(){
   $('#spaceStatus').className='pill '+(m.alive===false?'dead':'alive');
   $('#spaceStatus').textContent = m.alive===false ? '💀 éliminé·e' : '● en vie';
   if(m.role==='marie'){
-    c.innerHTML=`<div class="panel">
-      <span class="badge vip">💍 Cible VIP — intouchable</span>
-      <div class="target">${/camille/i.test(m.name)?'Mariée 👰':'Marié 🤵'}</div>
+    c.innerHTML=`<div class="panel cardface vip">
+      <span class="corner tl">💍</span><span class="corner br">💍</span>
+      <div class="cf-head"><span class="badge vip">💍 Cible VIP — intouchable</span></div>
+      <div class="who">Tu es</div>
+      <div class="target">${/camille/i.test(m.name)?'La Mariée 👰':'Le Marié 🤵'}</div>
+      <div class="cf-rule"></div>
       <div class="block vipblock"><div class="k">Ton rôle</div><div class="v">${m.marieText||''}</div></div>
-      <div class="block"><div class="k">🤫 Ta mission secrète (+${SCORING.secret} pts)</div><div class="v">${escapeHtml(m.secret||'')}</div></div>
+      <div class="block"><div class="k">🤫 Ta mission secrète <span class="pts gold">+${SCORING.secret} pts</span></div><div class="v">${escapeHtml(m.secret||'')}</div></div>
     </div>`;
   } else {
     const dead=m.alive===false;
-    c.innerHTML=`<div class="panel">
-      <span class="badge kill">${dead?'☠️ Hors-jeu — encore des points à prendre':'☠️ Contrat actif'}</span>
+    c.innerHTML=`<div class="panel cardface kill ${dead?'isdead':''}">
+      <span class="corner tl">🔪</span><span class="corner br">🔪</span>
+      <div class="cf-head"><span class="badge kill">${dead?'☠️ Hors-jeu — encore des points à prendre':'☠️ Contrat actif'}</span></div>
       <div class="who">Ta cible</div>
       <div class="target">${dead?'—':escapeHtml(m.target)}</div>
-      <div class="block"><div class="k">🔪 Pour l’éliminer (+${SCORING.kill} pts)</div><div class="v">${dead?'Tu as été éliminé·e : plus de cible. Mais continue les défis mariés !':escapeHtml(m.mission)}</div></div>
-      <div class="block vipblock"><div class="k">⭐ Défi marié (+${SCORING.vip} pts)</div><div class="v">${escapeHtml((m.vip||'').replace(/^Mission VIP\s*:\s*/i,''))}</div></div>
+      <div class="cf-rule"></div>
+      <div class="block"><div class="k">🔪 Pour l’éliminer <span class="pts">+${SCORING.kill} pts</span></div><div class="v">${dead?'Tu as été éliminé·e : plus de cible. Mais continue les défis mariés !':escapeHtml(m.mission)}</div></div>
+      <div class="block vipblock"><div class="k">⭐ Défi marié <span class="pts gold">+${SCORING.vip} pts</span></div><div class="v">${escapeHtml((m.vip||'').replace(/^Mission VIP\s*:\s*/i,''))}</div></div>
     </div>`;
   }
 }
