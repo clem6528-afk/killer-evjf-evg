@@ -465,7 +465,7 @@ async function aesEnc(key, obj){ const iv=crypto.getRandomValues(new Uint8Array(
 async function aesDec(key, b64){ const p=b64urlToBytes(b64); const iv=p.slice(0,12), ct=p.slice(12); const pt=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct); return JSON.parse(new TextDecoder().decode(pt)); }
 
 /* ════════ État ════════ */
-const state = { me:null, fb:null, players:{}, epoch:1, killAll:{}, vipAll:{}, secretAll:{}, epochSeen:null };
+const state = { me:null, fb:null, players:{}, epoch:1, killAll:{}, vipAll:{}, secretAll:{}, grilles:{}, epochSeen:null };
 function getPayload(){ const h=location.hash.replace(/^#/,'').trim(); return h.length?h:null; }
 const lsKey = pid => 'mecard_'+GAMEID+'_'+pid;
 function saveMe(){ try{ localStorage.setItem(lsKey(state.me.pid), JSON.stringify({...state.me, epoch:state.epoch})); }catch(e){} }
@@ -566,7 +566,8 @@ function renderActions(){
       const sec=el('button','btn-act btn-vip','🤫 J’ai réussi ma mission secrète'); sec.onclick=()=>chooseWitnessThenClaimSecret();
       wrap.appendChild(sec);
     }
-    wrap.appendChild(el('div','notice','Pour ta mission secrète, choisis un témoin présent qui l’a vue : il valide → +'+SCORING.secret+'. Et ci-dessous, valide les défis que les invités prétendent avoir réussis sur toi (refuser = « GRILLÉ ! », +'+SCORING.grille+' pts pour toi).'));
+    const g=el('button','btn-act btn-no','🛡️ GRILLÉ ! J’ai démasqué un piégeur'); g.onclick=()=>chooseGrilleTarget(); wrap.appendChild(g);
+    wrap.appendChild(el('div','notice','🛡️ GRILLÉ : si tu prends quelqu’un en flagrant délit de défi, démasque-le → +'+SCORING.grille+' pour toi et son défi tombe à l’eau. Tu peux aussi refuser un défi qu’on te déclare (même effet). Pour ta mission secrète, choisis un témoin qui l’a vue (+'+SCORING.secret+').'));
   } else {
     if(m.alive!==false && m.targetPid && m.targetPid!==m.pid){
       if(hasPendingKill()){ const b=el('button','btn-act btn-kill','⏳ Kill en attente de confirmation'); b.disabled=true; wrap.appendChild(b); }
@@ -596,6 +597,7 @@ function attachListeners(){
   onValue(pref('killClaims'), s=>{ state.killAll=s.val()||{}; processMyKills(); renderInbox(); renderActions(); });
   onValue(pref('vipClaims'), s=>{ state.vipAll=s.val()||{}; processMyVipFeedback(); renderInbox(); renderActions(); });
   onValue(pref('secretClaims'), s=>{ state.secretAll=s.val()||{}; processMySecretFeedback(); renderInbox(); renderActions(); });
+  onValue(pref('grilles'), s=>{ state.grilles=s.val()||{}; processGrilles(); });
 }
 function syncMyStatus(){
   const p=state.players[state.me.pid]; if(!p) return;
@@ -731,7 +733,29 @@ function processMyVipFeedback(){
 async function validateVip(id,c,btn,ok){
   const { update, increment }=state.fb; btn.disabled=true;
   if(ok){ await update(pref('vipClaims/'+id),{status:'validated'}); await update(pref('players/'+c.playerId),{points:increment(SCORING.vip), vipDone:increment(1)}); toast('Validé. +'+SCORING.vip+' pour '+c.playerName); }
-  else { await update(pref('vipClaims/'+id),{status:'refused'}); await update(pref('players/'+state.me.pid),{points:increment(SCORING.grille)}); toast('GRILLÉ ! +'+SCORING.grille+' pour toi 😎'); }
+  else { await update(pref('vipClaims/'+id),{status:'refused'}); await update(pref('players/'+state.me.pid),{points:increment(SCORING.grille)}); await update(pref('players/'+c.playerId),{vipDone:increment(1)}); toast('GRILLÉ ! '+c.playerName+' perd ce défi. +'+SCORING.grille+' pour toi 😎'); }
+}
+/* ── GRILLÉ proactif : le marié démasque un piégeur en flagrant délit ── */
+function chooseGrilleTarget(){
+  if(!state.fb){ toast('Multijoueur hors-ligne.'); return; }
+  const targets=ROSTER.filter(r=>r.role!=='marie');
+  const opts=targets.map(r=>`<button class="btn-act btn-no" data-gid="${r.pid}" data-gname="${escapeHtml(r.name)}">${escapeHtml(r.name)}</button>`).join('');
+  openModalHtml(`<div style="font-size:40px">🛡️</div><h2>Qui as-tu démasqué ?</h2><p style="color:var(--ink-soft);font-size:.92rem;margin:-.2em 0 .7em">Pris·e en flagrant délit de défi : sa mission tombe à l’eau et tu marques +${SCORING.grille}.</p>${opts}<button class="ghost" data-close>Annuler</button>`);
+  $('#modalBox').querySelectorAll('[data-gid]').forEach(b=>b.onclick=()=>{ closeModal(); doGrille(b.dataset.gid, b.dataset.gname); });
+  $('#modalBox').querySelector('[data-close]').onclick=closeModal;
+}
+async function doGrille(victimId, victimName){
+  const { update, increment, push, set }=state.fb;
+  await update(pref('players/'+state.me.pid), { points:increment(SCORING.grille) });
+  await update(pref('players/'+victimId), { vipDone:increment(1) });   // défi courant brûlé, sans points
+  for(const [id,c] of Object.entries(state.vipAll)){ if(c.playerId===victimId && c.status==='pending') await update(pref('vipClaims/'+id),{status:'refused'}); }
+  const r=push(pref('grilles')); await set(r, { victimId, marieName:state.me.name, ts:Date.now() });
+  toast('🛡️ GRILLÉ ! '+victimName+' perd son défi. +'+SCORING.grille+' pour toi 😎');
+}
+function processGrilles(){
+  for(const [id,g] of Object.entries(state.grilles||{})){
+    if(g.victimId===state.me.pid && !localStorage.getItem('gr_'+id)){ localStorage.setItem('gr_'+id,'1'); toast('🛡️ '+g.marieName+' t’a GRILLÉ·e ! Ton défi en cours tombe à l’eau.'); }
+  }
 }
 
 /* ── mission secrète marié (attestée par un témoin) ── */
@@ -799,6 +823,7 @@ async function resetGame(btn){
   await set(pref('killClaims'), null);
   await set(pref('vipClaims'), null);
   await set(pref('secretClaims'), null);
+  await set(pref('grilles'), null);
   await set(pref('meta/survivor'), null);
   await set(pref('meta/epoch'), (state.epoch||1)+1);
   state.epoch=(state.epoch||1)+1;
