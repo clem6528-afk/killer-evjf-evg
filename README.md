@@ -97,9 +97,18 @@ publier** si une donnée de jeu fuite dans `docs/index.html`.
 
 Produit :
 - `docs/index.html` — l'appli (à déployer).
-- `out/cards.html` — cartes à **imprimer / découper / distribuer en privé** (nom + QR + code).
-- `out/qr/*.png` — les QR individuels.
+- `out/cartes/carte_<Nom>.html` — **une carte autonome par joueur** (QR intégré en base64, nom + code).
+  Chaque fichier est indépendant : tu peux l'**envoyer/imprimer individuellement** sans exposer les
+  autres joueurs. `out/cartes/_index.txt` liste qui correspond à quel fichier.
+- `out/cards.html` — variante « planche unique » (tous les joueurs sur une page à découper).
+- `out/qr/*.png` — les QR individuels (images seules).
 - `out/host_sheet.md` — **ta feuille maître secrète** (qui vise qui, missions, codes, liens).
+
+> **Distribution sans tout voir** : pour qu'une personne de confiance distribue les cartes sans
+> connaître les assignations, envoie/imprime **un `carte_<Nom>.html` par personne**. Le mieux pour
+> la confidentialité : transmettre chaque fichier **directement à son joueur** (AirDrop, message
+> privé) — personne d'autre ne le manipule. Un code seul ne révèle rien (il faut le QR/lien
+> **et** le code pour ouvrir une carte).
 
 ### 2. Déployer sur GitHub Pages (compte `clem6528-afk`)
 ```bash

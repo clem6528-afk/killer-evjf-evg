@@ -93,9 +93,10 @@ for (const [keyId, pl] of Object.entries(players)) {
     console.error(`  ✗ ${pl.name} : ${e.message}`);
   }
 
-  // QR
+  // QR (fichier PNG + version inline base64 pour les cartes individuelles autonomes)
   const qrFile = `qr/${keyId}.png`;
   await QRCode.toFile(p('out', qrFile), url, { width: 600, margin: 2, errorCorrectionLevel: 'M' });
+  const qrData = await QRCode.toDataURL(url, { width: 600, margin: 2, errorCorrectionLevel: 'M' });
 
   // carte imprimable
   const roleTag = pl.role === 'marie' ? '💍 Cible VIP' : '☠️ Tueur';
@@ -108,7 +109,7 @@ for (const [keyId, pl] of Object.entries(players)) {
       <div class="hint">Scanne le QR (ou ouvre ton lien) puis entre ton code.</div>
     </div>`;
 
-  rows.push({ keyId, pl, url });
+  rows.push({ keyId, pl, url, qrData, roleTag });
   console.log(`  ✓ ${pl.name.padEnd(20)} code=${pl.code}`);
 }
 
@@ -130,6 +131,49 @@ const cardsPage = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
   Imprime, découpe, et remets chaque carte <b>en privé</b> à son joueur. Ne montre à personne la feuille maître.</p>
 <div class="grid">${cardsHtml}</div></body></html>`;
 fs.writeFileSync(p('out', 'cards.html'), cardsPage, 'utf8');
+
+// ───────── Cartes individuelles : 1 fichier AUTONOME par joueur (QR inline) ─────────
+// Chacun peut être envoyé/imprimé séparément sans exposer les codes des autres.
+fs.mkdirSync(p('out', 'cartes'), { recursive: true });
+const slug = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '')
+  .replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+const cardIndex = [];
+for (const { pl, qrData, roleTag } of rows) {
+  const file = `carte_${slug(pl.name)}.html`;
+  const page = `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Carte Killer — ${pl.name}</title><style>
+  @page{margin:1.5cm}
+  body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f4eee5;margin:0;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{background:#fffdfa;border:1px solid rgba(36,28,46,.12);border-top:5px solid #b3122e;
+    border-radius:18px;padding:32px 28px;max-width:360px;width:100%;text-align:center;
+    box-shadow:0 12px 36px rgba(36,28,46,.1)}
+  .role{font-size:.66rem;letter-spacing:2.5px;text-transform:uppercase;color:#a9863a;font-weight:700}
+  .name{font-family:"Didot","Bodoni 72",Georgia,serif;font-size:2.1rem;font-weight:600;margin:.12em 0 .25em;color:#241c2e}
+  .qr{width:230px;height:230px;margin:6px auto 4px;display:block}
+  .codelbl{font-size:.64rem;letter-spacing:1.8px;text-transform:uppercase;color:#938a9e;margin-top:10px}
+  .code{font-size:1.9rem;font-weight:800;letter-spacing:3px;color:#241c2e}
+  .how{font-size:.82rem;color:#5a5064;margin-top:18px;line-height:1.55}
+  .how strong{color:#241c2e}
+  .secret{font-size:.7rem;color:#b3122e;margin-top:12px;font-weight:600}
+  @media print{body{background:#fff;min-height:auto}.card{box-shadow:none;border:1px solid #ddd;border-top:5px solid #b3122e}}
+</style></head><body>
+  <div class="card">
+    <div class="role">${roleTag} · Killer EVJF/EVG</div>
+    <div class="name">${pl.name}</div>
+    <img class="qr" src="${qrData}" alt="QR ${pl.name}">
+    <div class="codelbl">Ton code secret</div>
+    <div class="code">${pl.code}</div>
+    <div class="how">📲 <strong>Scanne ce QR</strong> (ou ouvre ton lien perso), puis entre ton <strong>code</strong> pour découvrir ta cible.</div>
+    <div class="secret">🤫 Garde ta carte pour toi — ne montre ton code à personne.</div>
+  </div>
+</body></html>`;
+  fs.writeFileSync(p('out', 'cartes', file), page, 'utf8');
+  cardIndex.push(`${pl.name}  →  out/cartes/${file}`);
+}
+fs.writeFileSync(p('out', 'cartes', '_index.txt'),
+  'Cartes individuelles (1 fichier autonome par joueur) :\n\n' + cardIndex.join('\n') + '\n', 'utf8');
 
 // ───────── out/host_sheet.md (feuille maître — JAMAIS publiée) ─────────
 let sheet = `# 🔪 Feuille maître — ${cfg.meta.title}\n\n`;
