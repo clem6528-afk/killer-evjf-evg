@@ -50,8 +50,10 @@ ses actions, et le **classement live**.
   bout (ECDH P-256)** — la base ne voit jamais qui chasse qui. Le tueur gagne **+100** et hérite.
 - **Défi marié** : n'importe qui (même éliminé !) tape « défi marié réussi » → choisit Camille/Alex
   → le marié **valide** (+40) ou refuse = **GRILLÉ** (+20 pour le marié).
-- **Mission secrète des mariés** : validée par l'orga dans son espace (+50).
-- **Dernier survivant** : couronné par l'orga (+150).
+- **Mission secrète des mariés** : le marié la réalise puis **choisit un témoin** parmi les joueurs ;
+  le témoin atteste depuis son espace (+50). **Aucune action de l'orga requise pendant le jeu.**
+- **Dernier survivant** : **+150 attribué automatiquement** quand la chaîne se referme sur une
+  seule personne (garde anti-double atomique). Bouton orga de secours conservé.
 - **Barème** (modifiable dans `config/game.json` → `meta.scoring`) : kill 100 · défi 40 · GRILLÉ
   20 · secret 50 · survivant 150.
 
@@ -91,6 +93,10 @@ npm install                 # une fois (dépendance : qrcode)
 node generate.mjs           # utilise la baseUrl du config
 # ou pour forcer une autre URL :
 node generate.mjs --base-url=https://clem6528-afk.github.io/killer-evjf-evg/
+
+# ⚠️ Après distribution des cartes : pour redéployer un changement d'APPLI sans
+# invalider les liens/QR/PDF déjà donnés (ils sont ré-chiffrés à chaque run complet) :
+node generate.mjs --app-only   # reconstruit UNIQUEMENT docs/index.html
 ```
 Le script auto-teste le déchiffrement (round-trip + rejet des mauvais codes) et **refuse de
 publier** si une donnée de jeu fuite dans `docs/index.html`.

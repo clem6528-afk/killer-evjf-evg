@@ -27,6 +27,9 @@ const ITER = cfg.meta.pbkdf2Iterations || 250000;
 const argBase = process.argv.find(a => a.startsWith('--base-url='));
 let BASE = argBase ? argBase.split('=').slice(1).join('=') : cfg.meta.baseUrl;
 if (!BASE.endsWith('/')) BASE += '/';
+// --app-only : reconstruit UNIQUEMENT docs/index.html (l'appli), sans ré-chiffrer les
+// liens/QR/PDF/cartes — pour redéployer un changement d'appli sans invalider les cartes distribuées.
+const APP_ONLY = process.argv.includes('--app-only');
 
 // ───────── Crypto (compatible Web Crypto du navigateur) ─────────
 function b64url(buf) {
@@ -69,13 +72,13 @@ function payloadFor(pid, pl) {
 }
 
 // ───────── Génération ─────────
-fs.mkdirSync(p('out', 'qr'), { recursive: true });
-fs.mkdirSync(p('docs'), { recursive: true });
-
 const players = cfg.players;
 const rows = [];
 let cardsHtml = '';
 let failures = 0;
+
+if (!APP_ONLY) {
+fs.mkdirSync(p('out', 'qr'), { recursive: true });
 
 for (const [keyId, pl] of Object.entries(players)) {
   const payload = payloadFor(keyId, pl);
@@ -239,8 +242,10 @@ for (const { pl } of rows.filter(r => r.pl.role === 'marie')) {
 sheet += `\n## Liens personnels (à distribuer en privé)\n\n`;
 for (const { pl, url } of rows) sheet += `- **${pl.name}** (\`${pl.code}\`) : ${url}\n`;
 fs.writeFileSync(p('out', 'host_sheet.md'), sheet, 'utf8');
+} // fin du bloc complet (cartes/QR/PDF/host_sheet) — sauté en --app-only
 
 // ───────── docs/index.html — le LECTEUR, sans aucune donnée de jeu ─────────
+fs.mkdirSync(p('docs'), { recursive: true });
 let reader = fs.readFileSync(p('src', 'reader.html'), 'utf8');
 const firebaseCfg = { ...(cfg.meta.firebase || {}) };
 delete firebaseCfg._comment;
@@ -265,9 +270,13 @@ const leak = Object.values(players).some(pl =>
   reader.includes(pl.code) && pl.code !== cfg.meta.hostCode);
 if (leak) { console.error('\n❌ FUITE : une donnée de jeu apparaît dans docs/index.html'); process.exit(1); }
 
-console.log(`\n${failures ? '⚠️  ' + failures + ' échec(s) crypto' : '✅ crypto OK (round-trip + rejet mauvais code)'}`);
-console.log('✅ docs/index.html (lecteur sans données)');
-console.log('✅ out/cartes/*.pdf + *.html (1 par joueur) · out/cartes_killer.pdf (combiné)');
-console.log('✅ out/cards.html · out/qr/*.png · out/host_sheet.md');
+if (APP_ONLY) {
+  console.log('✅ docs/index.html régénéré (APP UNIQUEMENT). Liens / QR / PDF / cartes / host_sheet INCHANGÉS.');
+} else {
+  console.log(`\n${failures ? '⚠️  ' + failures + ' échec(s) crypto' : '✅ crypto OK (round-trip + rejet mauvais code)'}`);
+  console.log('✅ docs/index.html (lecteur sans données)');
+  console.log('✅ out/cartes/*.pdf + *.html (1 par joueur) · out/cartes_killer.pdf (combiné)');
+  console.log('✅ out/cards.html · out/qr/*.png · out/host_sheet.md');
+}
 console.log(`\nBase URL utilisée : ${BASE}`);
 if (BASE.includes('clem6528-afk')) console.log('→ lié au compte GitHub clem6528-afk');
