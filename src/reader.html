@@ -556,6 +556,7 @@ function renderSpace(){
       <div class="cf-head"><span class="badge vip">💍 Cible VIP — intouchable</span></div>
       <div class="who">Tu es</div>
       <div class="target">${/camille/i.test(m.name)?'La Mariée 👰':'Le Marié 🤵'}</div>
+      <video class="intro" src="maries.mp4" poster="maries.jpg" autoplay muted loop playsinline preload="auto"></video>
       <div class="cf-rule"></div>
       <div class="block vipblock"><div class="k">Ton rôle</div><div class="v">${m.marieText||''}</div></div>
       <div class="block"><div class="k">🤫 Ta mission secrète <span class="pts gold">+${SCORING.secret} pts</span></div><div class="v">${escapeHtml(m.secret||'')}</div></div>
