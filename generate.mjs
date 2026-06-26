@@ -229,7 +229,8 @@ await renderPdf(p('out', 'cartes_killer.pdf'), doc => {
 // ───────── out/host_sheet.md (feuille maître — JAMAIS publiée) ─────────
 let sheet = `# 🔪 Feuille maître — ${cfg.meta.title}\n\n`;
 sheet += `> ⚠️ SECRET ORGANISATEUR. Ne jamais montrer ni publier ce fichier.\n\n`;
-sheet += `Base URL : \`${BASE}\`\nItérations PBKDF2 : ${ITER}\nCode organisateur : \`${cfg.meta.hostCode}\`\n\n`;
+sheet += `Base URL : \`${BASE}\`\nItérations PBKDF2 : ${ITER}\nCode organisateur : \`${cfg.meta.hostCode}\`\n`;
+sheet += `🔑 CLÉ MAÎTRE (pour retirer un absent dans l'espace orga) : \`${cfg.meta.hostKey}\`\n\n`;
 sheet += `## Chaîne d'élimination (les 8 tueurs)\n\n`;
 sheet += `| Joueur | Code | Cible | Mission | Mission VIP |\n|---|---|---|---|---|\n`;
 for (const { pl } of rows.filter(r => r.pl.role === 'killer')) {
@@ -250,6 +251,14 @@ let reader = fs.readFileSync(p('src', 'reader.html'), 'utf8');
 const firebaseCfg = { ...(cfg.meta.firebase || {}) };
 delete firebaseCfg._comment;
 const firebaseEnabled = !!(firebaseCfg.databaseURL && firebaseCfg.apiKey);
+// Blob maître : toute la chaîne, chiffrée avec la CLÉ MAÎTRE (jamais injectée en clair).
+// Permet à l'orga (qui détient la clé) de retirer un absent et de recoudre la chaîne.
+const masterBlob = encryptCard(cfg.meta.hostKey, Object.entries(cfg.players).map(([pid, pl]) => ({
+  pid, name: pl.name, role: pl.role, code: pl.code,
+  target: pl.target || null,
+  targetPid: pl.role === 'marie' ? null : (nameToPid[pl.target] || null),
+  mission: pl.mission || null
+})));
 reader = reader
   .replaceAll('__TITLE__', cfg.meta.title)
   .replaceAll('__SUBTITLE__', cfg.meta.subtitle || '')
@@ -261,14 +270,18 @@ reader = reader
   .replaceAll('__VIPPOOL__', JSON.stringify(cfg.meta.vipPool || []))
   .replaceAll('__ROSTER__', JSON.stringify(roster))
   .replaceAll('__FIREBASE_CONFIG__', JSON.stringify(firebaseEnabled ? firebaseCfg : null))
+  .replaceAll('__MASTERBLOB__', masterBlob)
   .replaceAll('__RULES_HTML__', cfg.rulesHtml);
 fs.writeFileSync(p('docs', 'index.html'), reader, 'utf8');
 
-// garde-fou anti-fuite : aucune mission/cible/code ne doit traîner dans le fichier publié
+// garde-fou anti-fuite : aucune mission/cible/code en CLAIR dans le fichier publié.
+// On retire le blob maître (chiffré) du scan pour éviter les faux positifs base64.
+const scan = reader.split(masterBlob).join('');
+if (scan.includes(cfg.meta.hostKey)) { console.error('\n❌ FUITE : la clé maître apparaît dans docs/index.html'); process.exit(1); }
 const leak = Object.values(players).some(pl =>
-  (pl.mission && reader.includes(pl.mission)) ||
-  (pl.vip && reader.includes(pl.vip)) ||
-  reader.includes(pl.code) && pl.code !== cfg.meta.hostCode);
+  (pl.mission && scan.includes(pl.mission)) ||
+  (pl.vip && scan.includes(pl.vip)) ||
+  (pl.code !== cfg.meta.hostCode && scan.includes(pl.code)));
 if (leak) { console.error('\n❌ FUITE : une donnée de jeu apparaît dans docs/index.html'); process.exit(1); }
 
 if (APP_ONLY) {

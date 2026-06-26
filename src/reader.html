@@ -432,6 +432,7 @@ const SCORING = __SCORING__;
 const VIPPOOL = __VIPPOOL__;                 // défis mariés débloqués après le défi perso
 const ROSTER = __ROSTER__;                   // [{pid,name,role}]
 const FIREBASE_CONFIG = __FIREBASE_CONFIG__; // objet ou null (mode hors-ligne)
+const MASTERBLOB = "__MASTERBLOB__";          // chaîne chiffrée (clé maître orga, hors appli)
 const MARIES = ROSTER.filter(r => r.role === 'marie');
 
 /* Faux indices pour les curieux (jamais affichés en jeu) */
@@ -454,6 +455,14 @@ async function decryptUnlock(code, payloadB64){
   const plain=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, data);
   return JSON.parse(new TextDecoder().decode(plain));
 }
+async function encryptWithCode(code, obj){  // miroir navigateur de encryptCard (PBKDF2 + AES-GCM)
+  const salt=crypto.getRandomValues(new Uint8Array(16)), iv=crypto.getRandomValues(new Uint8Array(12));
+  const km=await crypto.subtle.importKey('raw', new TextEncoder().encode(code), {name:'PBKDF2'}, false, ['deriveKey']);
+  const key=await crypto.subtle.deriveKey({name:'PBKDF2', salt, iterations:ITER, hash:'SHA-256'}, km, {name:'AES-GCM', length:256}, false, ['encrypt']);
+  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, new TextEncoder().encode(JSON.stringify(obj))));
+  const out=new Uint8Array(16+12+ct.length); out.set(salt); out.set(iv,16); out.set(ct,28);
+  return bytesToB64url(out);
+}
 
 /* ════════ Crypto : héritage chiffré bout-en-bout (ECDH P-256) ════════ */
 async function genECDH(){ return crypto.subtle.generateKey({name:'ECDH', namedCurve:'P-256'}, true, ['deriveKey']); }
@@ -465,7 +474,7 @@ async function aesEnc(key, obj){ const iv=crypto.getRandomValues(new Uint8Array(
 async function aesDec(key, b64){ const p=b64urlToBytes(b64); const iv=p.slice(0,12), ct=p.slice(12); const pt=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, ct); return JSON.parse(new TextDecoder().decode(pt)); }
 
 /* ════════ État ════════ */
-const state = { me:null, fb:null, players:{}, epoch:1, killAll:{}, vipAll:{}, secretAll:{}, grilles:{}, epochSeen:null };
+const state = { me:null, fb:null, players:{}, epoch:1, killAll:{}, vipAll:{}, secretAll:{}, grilles:{}, overrides:{}, chain:null, epochSeen:null };
 function getPayload(){ const h=location.hash.replace(/^#/,'').trim(); return h.length?h:null; }
 const lsKey = pid => 'mecard_'+GAMEID+'_'+pid;
 function saveMe(){ try{ localStorage.setItem(lsKey(state.me.pid), JSON.stringify({...state.me, epoch:state.epoch})); }catch(e){} }
@@ -505,6 +514,7 @@ async function unlock(){
   let card;
   try{ card=await decryptUnlock(raw, payload); }
   catch(e){ err.textContent='Mauvais code, ou ce n’est pas ta carte. Réessaie.'; input.select(); return; }
+  card._code=raw;  // gardé sur l'appareil pour déchiffrer une éventuelle nouvelle cible (absent retiré)
   await enterSpace(card);
 }
 
@@ -598,6 +608,21 @@ function attachListeners(){
   onValue(pref('vipClaims'), s=>{ state.vipAll=s.val()||{}; processMyVipFeedback(); renderInbox(); renderActions(); });
   onValue(pref('secretClaims'), s=>{ state.secretAll=s.val()||{}; processMySecretFeedback(); renderInbox(); renderActions(); });
   onValue(pref('grilles'), s=>{ state.grilles=s.val()||{}; processGrilles(); });
+  onValue(pref('overrides'), s=>{ state.overrides=s.val()||{}; applyOverride(); });
+}
+async function applyOverride(){
+  const o=state.overrides[state.me.pid]; if(!o || !o.blob) return;
+  const seen=+(localStorage.getItem('ovrts_'+state.me.pid)||0);
+  if(!(o.ts>seen)) return;
+  if(!state.me._code){ return; }
+  try{
+    const card=await decryptUnlock(state.me._code, o.blob);
+    localStorage.setItem('ovrts_'+state.me.pid, String(o.ts));
+    state.me.target=card.target; state.me.targetPid=card.targetPid; state.me.mission=card.mission; saveMe();
+    renderSpace(); renderActions();
+    if(state.me.targetPid===state.me.pid){ heartsRain(); openModal('🏆','Dernier survivant !','Après les retraits, il ne reste que toi. Le bonus est à toi ! 🎉'); awardSurvivorOnce(state.me.pid, state.me.name); }
+    else toast('🔁 L’orga a retiré un·e absent·e. Ta nouvelle cible : '+state.me.target+'.');
+  }catch(e){ console.warn('override KO', e); }
 }
 function syncMyStatus(){
   const p=state.players[state.me.pid]; if(!p) return;
@@ -611,7 +636,7 @@ function syncMyStatus(){
 /* ── classement ── */
 function renderLeaderboard(mountSel){
   const mount=$(mountSel); if(!mount) return;
-  const rows=Object.entries(state.players).map(([pid,p])=>({pid,...p}))
+  const rows=Object.entries(state.players).filter(([_,p])=>!p.removed).map(([pid,p])=>({pid,...p}))
     .sort((a,b)=>(b.points||0)-(a.points||0)||(b.kills||0)-(a.kills||0)||a.name.localeCompare(b.name));
   mount.innerHTML='';
   rows.forEach((r,i)=>{
@@ -810,6 +835,19 @@ function renderHost(){
   else sv.appendChild(el('div','notice','Personne en vie pour l’instant.'));
   b.appendChild(sv);
 
+  const ab=el('div','panel'); ab.appendChild(el('h2','sec','🚫 Retirer un joueur absent'));
+  if(!state.chain){
+    ab.appendChild(el('div','notice','Pour un no-show (idéalement avant que les kills commencent). Entre ta CLÉ MAÎTRE (dans out/host_sheet.md) pour activer.'));
+    const inp=el('input'); inp.type='text'; inp.id='masterKey'; inp.placeholder='clé maître'; inp.autocomplete='off'; inp.setAttribute('autocapitalize','none'); inp.spellcheck=false; ab.appendChild(inp);
+    const load=el('button','btn-act btn-ok','🔑 Charger la chaîne'); load.onclick=()=>loadChainFromInput(load); ab.appendChild(load);
+  } else {
+    ab.appendChild(el('div','notice','Clique sur un·e absent·e : sa cible passe à son chasseur (0 point), la chaîne se recoud toute seule sur son téléphone.'));
+    Object.entries(state.players).filter(([_,p])=>!p.removed).forEach(([pid,p])=>{
+      const btn=el('button','btn-act btn-no','🚫 Retirer '+escapeHtml(p.name)); btn.onclick=()=>removeAbsent(pid,p.name,btn); ab.appendChild(btn);
+    });
+  }
+  b.appendChild(ab);
+
   const board=el('div','panel'); board.appendChild(el('h2','sec','Classement complet'));
   const lb=el('div','lb'); lb.id='hostLb'; board.appendChild(lb); b.appendChild(board);
   renderLeaderboard('#hostLb');
@@ -824,6 +862,7 @@ async function resetGame(btn){
   await set(pref('vipClaims'), null);
   await set(pref('secretClaims'), null);
   await set(pref('grilles'), null);
+  await set(pref('overrides'), null);
   await set(pref('meta/survivor'), null);
   await set(pref('meta/epoch'), (state.epoch||1)+1);
   state.epoch=(state.epoch||1)+1;
@@ -850,6 +889,39 @@ async function awardSurvivorOnce(pid,name){
   return credited;
 }
 async function awardSurvivor(pid,p,btn){ if(!confirm('Couronner '+p.name+' (+'+SCORING.survivor+') ?'))return; btn.disabled=true; const ok=await awardSurvivorOnce(pid,p.name); toast(ok?('👑 '+p.name+' couronné·e (+'+SCORING.survivor+')'):(p.name+' : un·e survivant·e est déjà couronné·e.')); btn.disabled=false; }
+
+/* ── Retirer un absent : recoud la chaîne via le blob maître (clé maître orga) ── */
+async function loadChain(key){ try{ const arr=await decryptUnlock(key, MASTERBLOB); if(!Array.isArray(arr)) return false; state.chain=arr; return true; }catch(e){ return false; } }
+async function loadChainFromInput(btn){
+  const k=(($('#masterKey')||{}).value||'').trim(); if(!k){ toast('Entre la clé maître.'); return; }
+  btn.disabled=true;
+  if(await loadChain(k)){ toast('Chaîne chargée.'); renderHost(); }
+  else { btn.disabled=false; toast('Clé maître incorrecte.'); }
+}
+async function removeAbsent(pid,name,btn){
+  if(!state.chain){ toast('Charge d’abord la chaîne.'); return; }
+  if(!confirm('Retirer '+name+' (absent·e) ? Sa cible passe à son chasseur, sans points.')) return;
+  btn.disabled=true;
+  await state.fb.update(pref('players/'+pid), {alive:false, removed:true});
+  const removed=new Set(Object.entries(state.players).filter(([_,p])=>p.removed).map(([id])=>id));
+  removed.add(pid);
+  await pushOverridesFor(removed);
+  toast(name+' retiré·e. Chaîne recousue.');
+}
+async function pushOverridesFor(removedSet){
+  const { set }=state.fb;
+  const byPid=Object.fromEntries(state.chain.map(c=>[c.pid,c]));
+  for(const c of state.chain){
+    if(c.role==='marie' || removedSet.has(c.pid) || !c.targetPid) continue;
+    if(!removedSet.has(c.targetPid)) continue;                 // sa cible d'origine est présente → rien à faire
+    let cur=c.targetPid, mission=null, guard=0;
+    while(removedSet.has(cur) && guard++<50){ mission=byPid[cur]?byPid[cur].mission:mission; cur=byPid[cur]?byPid[cur].targetPid:null; if(cur===c.pid) break; }
+    if(!cur) continue;
+    const newCard={ targetPid:cur, target:(byPid[cur]?byPid[cur].name:''), mission:mission||c.mission };
+    const blob=await encryptWithCode(c.code, newCard);
+    await set(pref('overrides/'+c.pid), { blob, ts:Date.now() });
+  }
+}
 
 /* ════════ Règles / modales / easter eggs ════════ */
 function openModal(emoji,title,text){ openModalHtml(`<div style="font-size:44px">${emoji}</div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(text)}</p><button class="ghost" data-close>Fermer</button>`); $('#modalBox').querySelector('[data-close]').onclick=closeModal; }

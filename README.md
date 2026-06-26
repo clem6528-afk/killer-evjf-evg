@@ -55,6 +55,11 @@ ses actions, et le **classement live**.
   le témoin atteste depuis son espace (+50). **Aucune action de l'orga requise pendant le jeu.**
 - **Dernier survivant** : **+150 attribué automatiquement** quand la chaîne se referme sur une
   seule personne (garde anti-double atomique). Bouton orga de secours conservé.
+- **Joueur absent** : l'orga peut le retirer depuis son espace (« 🚫 Retirer un joueur absent »)
+  en saisissant la **clé maître** (`meta.hostKey`, rappelée dans `out/host_sheet.md`). La chaîne
+  se **recoud automatiquement** — le chasseur de l'absent récupère la cible suivante, **0 point**.
+  À faire de préférence **avant que les kills commencent** (la réparation suit la chaîne d'origine).
+  La clé maître n'est **jamais** dans l'appli publiée : le blob de la chaîne y est chiffré avec.
 - **Barème** (modifiable dans `config/game.json` → `meta.scoring`) : kill 100 · défi 40 · GRILLÉ
   20 · secret 50 · survivant 150.
 
