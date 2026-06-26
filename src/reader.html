@@ -297,6 +297,14 @@
     box-shadow:0 12px 30px rgba(36,28,46,.25)}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
+  /* ── Sting vidéo plein écran (kill, etc.) ───────────────────── */
+  .sting{ position:fixed; inset:0; z-index:200; background:#14101a; display:none;
+    align-items:center; justify-content:center; cursor:pointer; }
+  .sting.show{ display:flex; animation:fade .2s both; }
+  .sting video{ width:100%; height:100%; object-fit:contain; }
+  .sting .skip{ position:absolute; top:calc(14px + env(safe-area-inset-top)); right:16px;
+    color:#fff8; font-size:.78rem; letter-spacing:.5px; pointer-events:none; }
+
   /* ── Accessibilité : focus clavier visible ────────────────── */
   a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible,
   [tabindex]:focus-visible{
@@ -427,6 +435,7 @@
 </div>
 
 <div id="rain"></div>
+<div id="sting" class="sting"><video id="stingVid" playsinline preload="auto"></video><span class="skip">toucher pour passer</span></div>
 <div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -662,6 +671,7 @@ function renderLeaderboard(mountSel){
 
 /* ── KILL : initiation + réception de l'héritage ── */
 async function initiateKill(btn){
+  playSting('kill.mp4');   // sting plein écran (déclenché par le clic → son autorisé)
   const { push, set }=state.fb;
   btn.disabled=true; btn.textContent='⏳ En attente de confirmation…';
   const ref=push(pref('killClaims')); const id=ref.key;
@@ -953,6 +963,15 @@ function heartsRain(){ const rain=$('#rain'); const emo=['💍','❤️','🔪',
     rain.appendChild(d); setTimeout(()=>d.remove(),5500); } }
 let toastTimer=null;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3000); }
+let stingT=null;
+function playSting(src){
+  const ov=$('#sting'), v=$('#stingVid'); if(!ov||!v) return;
+  const hide=()=>{ ov.classList.remove('show'); try{ v.pause(); }catch(e){} v.removeAttribute('src'); try{ v.load(); }catch(e){} clearTimeout(stingT); };
+  v.src=src; ov.classList.add('show'); v.onended=hide; ov.onclick=hide;
+  try{ v.currentTime=0; }catch(e){}
+  const p=v.play(); if(p&&p.catch) p.catch(()=>{});
+  clearTimeout(stingT); stingT=setTimeout(hide, 13000);
+}
 
 /* ════════ Boot ════════ */
 document.querySelectorAll('[data-logo]').forEach(e=>e.addEventListener('click',bumpLogo));

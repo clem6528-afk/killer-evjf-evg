@@ -297,6 +297,14 @@
     box-shadow:0 12px 30px rgba(36,28,46,.25)}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
+  /* ── Sting vidéo plein écran (kill, etc.) ───────────────────── */
+  .sting{ position:fixed; inset:0; z-index:200; background:#14101a; display:none;
+    align-items:center; justify-content:center; cursor:pointer; }
+  .sting.show{ display:flex; animation:fade .2s both; }
+  .sting video{ width:100%; height:100%; object-fit:contain; }
+  .sting .skip{ position:absolute; top:calc(14px + env(safe-area-inset-top)); right:16px;
+    color:#fff8; font-size:.78rem; letter-spacing:.5px; pointer-events:none; }
+
   /* ── Accessibilité : focus clavier visible ────────────────── */
   a:focus-visible, button:focus-visible, summary:focus-visible, input:focus-visible,
   [tabindex]:focus-visible{
@@ -427,6 +435,7 @@
 </div>
 
 <div id="rain"></div>
+<div id="sting" class="sting"><video id="stingVid" playsinline preload="auto"></video><span class="skip">toucher pour passer</span></div>
 <div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -441,7 +450,7 @@ const SCORING = {"kill":100,"vip":40,"grille":20,"secret":50,"survivor":150};
 const VIPPOOL = ["Un·e marié·e te fait un câlin de 10 secondes en comptant à voix haute.","Un·e marié·e porte un accessoire ridicule (voile improvisé, lunettes...) pendant 10 minutes.","Un·e marié·e te déclame 3 qualités de son/sa partenaire devant tout le monde.","Un·e marié·e te chante le refrain d'une chanson d'amour rien que pour toi.","Un·e marié·e t'apporte à boire sans que tu aies rien demandé à voix haute.","Un·e marié·e prend une pose « couverture de magazine » pour une photo avec toi.","Un·e marié·e imite votre première rencontre en 15 secondes.","Un·e marié·e fait un toast surprise en plein milieu d'un repas.","Un·e marié·e saute dans la piscine tout·e habillé·e.","Un·e marié·e t'apprend un pas de danse en 30 secondes.","Un·e marié·e raconte son pire rencard d'avant le couple.","Un·e marié·e te laisse gagner une manche de Mario Kart."];                 // défis mariés débloqués après le défi perso
 const ROSTER = [{"pid":"louison","name":"Louison","role":"killer"},{"pid":"maxime","name":"Maxime","role":"killer"},{"pid":"elsa","name":"Elsa","role":"killer"},{"pid":"anne_charlotte","name":"Anne-Charlotte","role":"killer"},{"pid":"corentin","name":"Corentin","role":"killer"},{"pid":"pierre_m","name":"Pierre (de Marion)","role":"killer"},{"pid":"marion","name":"Marion","role":"killer"},{"pid":"pierre_x","name":"Pierre #2","role":"killer"},{"pid":"theo","name":"Théo","role":"killer"},{"pid":"camille","name":"Camille","role":"marie"},{"pid":"alex","name":"Alex","role":"marie"}];                   // [{pid,name,role}]
 const FIREBASE_CONFIG = {"apiKey":"AIzaSyB_62bI7iLEm67WXmfpoJBd2SoEFgCNwcM","authDomain":"killer-evjf-evg.firebaseapp.com","databaseURL":"https://killer-evjf-evg-default-rtdb.europe-west1.firebasedatabase.app","projectId":"killer-evjf-evg","storageBucket":"killer-evjf-evg.firebasestorage.app","messagingSenderId":"938751557403","appId":"1:938751557403:web:c90c9c5d6a4762bffdddbe"}; // objet ou null (mode hors-ligne)
-const MASTERBLOB = "LL_Dqvbiag0ok7Vn97I-Y6LxA-S4dSthtKEVABUW9Rt55S95o-WTeaXn7znWBLpuCIqJ0VP6O30hdOUeWbYuZsg6iVA5KYb4H-PUA-9cLjRzW0vbENOgkb_id2nOu7bbiLtXjQPMVjrG56I7oDWauGyx5wTig7EtE4-_r4pqJA6h4BSaGXzbn0js2-Nn9GEBlqLqBinErLsOUaN8o6aaqcG6JUMJ_LgkksCgEfI8kSJROWrGNa6dbcQXg3D_gSI5jcbnwkjA2xqjG1robX6yPiUOtG0xhekw0z-oaQRJZZag3bSgTWsEms7vFSBydMZ9QGvVvrtC1aCaQ0z6tuRRd1guLRzbM-mr31vUPE9yHolz2_dEIqTXl2zyuE5a1zkVLkQ6UQowwIOIcElC1vQkkjZbp7XDcirqdnGI-SaOS3my4iSYFdYH00QK1CzqS6T2zObi87c9J0GsoYjOrj-AFAqKOLV_2jwzh3rLGSXrI8W-vFZVQgqENgtRUZ_wQrDcnOz0EIU757qPidzdOquiFjC53abPb8K5_wsdnI7OQTIWUl8KXJlEgXj34_nqd-5x02rPvatqHbuK9uOD5fXnKcIFb0RsGgdhj8P43PpVHQ3vpNN1bWS0uRKQu6mJ5E_Mk1bvaem2URCe-dP62j_hXVDW4nAOyDu27qyElVEzUf6yKQzNHstzX5suAHU3hCG-Sykc1jAE309iPpBrpF1zrpnDUM7e3qkszjxevO9ScgpWg3C_1YuU5EsQ70Q8LnmW742DfRjHAw5JZR0JC7t-CEMcSS69kR9hcNpEr__ZCRpjGDObxCOWAGIRke2EckTAxGJEMT84dqsf-rGuB4h5mCQOF0rpTuaJUH8MjVAF85f58TvJji0C_1N9smk-djaIB-JTTLBJYQOIhwN8tj4Euyom0509VJuuGOyKCXwQ-CLZKOLYvIgM2rvEQhQFxl94aPgbsKwxd5O4YiVSwNLbkyBmx3ARK5RDLj325gqRAciJFF-UKkATUclE378N21Z-TVSr4Tlpba5SS-XqW3iFLQlDqhaESV1quWNIcD5jKzFXLFoHoyWAtMkPgTwdHQrsDOkmp9nQptHqGkwKCmd2Fvbsg9QtFSUyiIX2xeai0KI2mSq8CtQSvCpjXY65QmXGp5rgeTTk36gO5DYeBadR16gV11cVDJ3ZN7Gfu_AcaggJqC9QxIZxYy7VvihF53JY5W15B10U2cuQADRidBB4Ex6phrU39cqgbGsjIPT-FHPovDTkUQbcQaACyHY7uP_hHkttuakMTkcpV98HvVeVJcbzne7w6Q0FcNdRPKQxpR5j53CoSZD5j9RrPlPlscctRxLAS4Tfr0Zm4kQczPvpfKbgsJ6GlYEGv1t4hCA02SvZcKsVmNTJn4aDPB5AiV4de-F6VpVuhi6tgvR51YAYjIyhcNH7ZZdT32WHOZhmIj96hQYZmQePS2soRYaSkS7SzD-OwvnAM958wvhLMzPsUqlzySopURU3H_CSxLipyiCa0XX94nHZu1IYbWXhQAuRJjAzXcqc0LZscYgmXxqJybS8Ze7idP-EGDQIP2dW0GuOzPT0pyq9keLW5Nu3g4QQR9VsWfmK4c7x60lt3CF9PZYLHbvMyAPk81PAOsiRcrXaTErtP-tflHJmwHPW7scnaMHZV7PHZJhBYmoyXZusa-U1IXkERLFNtazxdO44gy7agFt_H-I4ieCyp-X-AxhWO4Nf4u9zWXc3VezWQGmOJ6vXgYWJEj2mOPjsPSMFar_eXP3UJ_jXGGdp_-Acs0PfK3UnB_Upa4YsSikHwJ7RRPcDJB3A18-pqg8T9130RDSE7giL7aTUA3lpvyA0tKzM4JC26VCa-aNMAEPBl7Mj-xJYYXtFYod2FRXOFvC-Q_m_whfG9evCCYg30-g2qR3Rn_oWjrPwNSunbiS3-fcXVhn33TtUFbjd8SXpbkZiQD7p3WFrbwnsZHT9q9_mk7WfwRuRmhyvTDFC-57CV11iGrRqAzYd4EJvIFZFI9U32onI9e73QleaUTonnfPNC-iGcd6jx5f65uoqko2KGBITAbiQ_d2hENVYwkvSoaJ2RayxV4Qo0UsHTkDzOuSbA-YnA9v3GJY3x0eKJgbIes02jrT10aBF35WR-dk9NiiN_EXxsPWwzqkLZ9xZ9aC0Y_bons0z1AmM20R1MYVK4vWn2EwKeWMdqpLEyFQIGAjBuUW5FexrzWtwqKMRzpJAYOigSMnbwv7PAWT8t7pZn9sNsM2Nw5QlMUzh-1pO6TS3fTV6NzB1m1RvDtiJvegOJNHAzTjAwznXtD4SbHMGW-z_c91Qq2PA2gNPAY43NMf45LX8LfXZudXLT_JsfSsZdyYaA1A--cdTHBiJO8dfCQVMGpxOw6q2213USxNFr-pDHfL22884wGuPUfadEeohDMV6XsIB5d6tfMXuHyXhcqwAuIXdIS9Z3M1Xgw1Nwdjnvb_japAOoCy7MKLvv56z0lfrm5NrD7gKg4oiyhDQolsvm82HqyeM-lQgP2TIsooLU6OTKeBhazbX8yljmCiqz7yGKchd_ELW2Z1fnUn7erJmZMCRFKmhl14Rg8KHiALaN1NsiWeTadWeXHGyA3HQeNXA-VNpQyamNz1aoT03hauyxr10RhBHJL6KpumjzQypEDHDzidI78EuIuGKbhZcbooNzF1Q263jNXFVjWPrB-xdleC7pQ1668M653Cax1jMkeu3jxe7cdlpOuYtf1kqp4GSTF8-rV9bZiCQw6akfeZQXKF91IKkWqsf9-bkT36wBCihOkAGiocsx4UB1KebC6yx_162m1k47rIhqDvNG-TwqKEOIiVDYwHFSM4I-dj8cMgnCcH8eUShR7bmHhxr4Sz8uVzH5697-LNFdbMc-5XpvqJ3Yk4cHMx-jpK1JR0mMKQn_YUKhdCmZpwyCVJWwnDZkT7kWunvMpAVpDu5apdvgk0YkeB7fFTCJyvKxEZTm5lPlYi010Yt79-xdSDaIrfLEPOxtlnD21xQF8TNQo5M7di593nRw3KLphpmhXjAGC0U5sDbzWKYxQ";          // chaîne chiffrée (clé maître orga, hors appli)
+const MASTERBLOB = "qUJCnq9OnElVb5EyLhXsYoN-6jQqwSWBSYfyMEPCD7dpfuX77HP1n0k3jHB2jQ0aq8ijG3IMs19fyrsjio7iMV5p2i5dLgGivrayeoCGb24H4Wayy1dRxhUgpxFDsn5bxp5oyKMueCD_ZKT6pQoZjihC1ArNM0L_DbVPMvPfd0ya6I1vfDlvzGazA6tyFAY-DZndvGHAJwHZwo0VfsrSEM-bjJlPqbNoYoxURCTduxvuLKJ6QrKqakHqoTz9npELWgWcQ-4hSy6-fJYdGIP8BGHoP07xUIWwC6HdtD9AaqDutrTw8Jyd8JyxLQzjOVdOltdd3SkyzfJh4wyymQEA4QsYcIkPPoGK04Aqnmfr1BwbA06CbmD14GPJD86irSQHtu7SM5u63tPK9e70mtyFUU4RlDP4cYDsrQDVUb-m0f5oSZQe8HPcsQV80WopbX6e6jhYNlopPM0Gfs-gT6MEK-4lvNlQZ4aA15BrWM17ZKaNl1Ejy1riRUVJ_Vxae8V7NWIZuP6XBDm9wN9phoEs7Fn0hDBqLmicT6WYUSLGRM_T4OMQqhX9sSUMlyS2dXLY8428g8ZO5uxy0gBKhM7Ti6OAk30wcnfbTzQDtcwH1VTZWWiaOsK4YAAc8pQcO2sNBjHWhp_m3l5wzgiXOfx9dAVAH6-OJjSlSl_rFqBykeDfNHrIGfUMe0VDC4ZWG-f1k2qV4AP755fxfcqQ_g0NvTABsqmDwLnUPA3RYhHRDyjopzlhTMQL6q_usN6fRvr-hhjtgruQHKo4_jC5WPdC4xYNAbHbsTdgJWZ3PMeepyq9y91V4447nHyr-kgpwywyoHQNwGtyJfspAXy0xtoQHYymXn1GBP0QSiYP9RYddFuDTkRdGUkuTCVaGDwa6VTXDwUicIaNjYtXqjDoQUKR2GNsI6-ULHfvbuzm1jsN7_NANpc10dzzGl775UCHCakSaLKRb2LHQBVWTMhFQQ0WIluRMeG1aEQH8XF_Ds6wj4bA6MMuTQrVZNMsKTxslqo15qNDilSBKuB1mj5JMgHUhcTVlz1ZY6UGHIU-QreuEU0LlrF61YrUWhOknjOrHhtZSEfB8DezTh_cZAV3_LgoYpt6ISagIjdbbmAHR_CpbS6E3rRQ4pvG6vlQ6lDUzV5Xn1W8rsPL2ckWrPgQUFkRVLA1IETgHxIKPNXNxn_hThxzd-EWuyYeTOPj4u30yu_mVg0Z27h8wbt163AewvVRnYMZE1HoNCFd3Lp-8qW1ZlrSpbqVhAt3v5ce0SlCw2gM_NG2y7qJTfK_Q8ZczVTdOHFu_1jghrkVkpYypHdlhuZhFRYMZFAlk08-UiYFGOZHK-DnqtWVZz6aqUHVqocvfASHnUhqJxyZG1dgCBeV3QEYUqwIzyxrmQ2O6W2HGS4FOSMb0VTBW-OFpXotYhDrR4qhqQQowAaaAAUQOBK21EVPn0ysuecaQxr3NhS7ehXacY1gGVwXzU1AhIOzfhnFMxuO06MPV3ItkLf_7kOmeGEh8eHk-S3gFsB-ADM6Xi38A-JryFK65cGBLsPnic3KAVH88S_n7q2eiYa51kbC5xTD_MI6h9v2IUwcI3l2exMBWBoKzUNvRhXpqZ84_pC8mvJwoJjYg-zKE5JPYUY8Tl4raRmwplwX7KSrJ4AdJK2BsX22n95oBSuGaIUSL-bvRu6Q4SgHR4gJyvZzRA6207acFJSy75rLlR1gLR4OkPQ6-O_FXx2pnG52dEZL-70TYCc74IkKwUKEk78PGQr9vCrrQ-DsyDqvCre24SVUmKgenCRiMztP273Wh_tTwpMYE-DuZ63FFV7ioThqWOCkswtNKMEQ1tURF0CB_SdD3Ecu5KB0yq2OEGX-lCj7-L5Gq0a2_UEzX7zbCoZETUdfersfhEoULX79BbOW159tMjGjRsMBqLZ9zUmMo22onwXyhPpw38_OyuPhZNPEzIGiwgdS0Zsqkdwi2ymYX9K_lTDlSYaeZILdbJMwvk32y0fpZ9WDFzB_XE43CTFhdmfE4OrwKBLQXTj01HRH3FBVpMAD9NiwQ2NzZKhlkIOXNCVdsr0ZIVBA6tyZqPjlvE3fi0t99Fe1FKQlO60jbqORi3xdu1oaTy9w0wdrd3S0FAozNj_25Xj7vziPkA2_6voFd60fEzuwwkag7-roO3OwZZcIf_M2Hsz6kLW0nhIfBaMAdMzmglkOnZRML-rDmowByKfgqbvocLIIKAIo9U4VlEPhvJsEtI6IDdETkMlyQIR405loj0Fjmphdz3-sBQFiVnD_KXWyOHVr8ugjUQFuL54hjQO-ppAOoCKSVR4FmuYYdFFwUQT6zl3mKj3zkLpSotiyUxoIj3pkQhZZo0dLwa8Fuo50EvChdLpME3jnBPtjWSpQLRPqlMCiZO-zog_0VBZ3iquRWXmcYx3lvWdRjctORzL6LrW_II2FgZOsA-uN74iGLqQWn4YZ47rVDkSHdbgeoiRZU4Dejgw56xhBhI29hR4zoJHU9UFyCkQf-VzWkPIX1x8bYexDkgEKUYt0GG54vfTDveb1SM_l_2N7enbHvYRMCniz1pVNrvNsVA7k3S68eOTGjpjfcWVpDdv4qsyTzNoF56XqnPO7qq_o5wzgBU7BAxY_0g0yuWU3pifjvRjJfPD-qmGPJnHRr1f9u_jhvr8XM_aaknWBmBxHyc3wdhSVqO2yK6SLXajMDTW35Ny8kUyLY4n5ZQNE6RrKytv7hFuh9HTRpu8ZAVCJ3WNnXzLmN2Fi1t9Zov6ArZB6j1JEFtzhWT30y94IgkWC5G-0uSu2w_LwCcIHwYV6zxFj_R9rCvtg1caFSafiN4DV_-d34Dg9s5vilWflhoAbUFYq0aQhPqKCEvmU_98AVEM5bTtqoCUG5Vr_twq6Ts9_T0406HSl-pSaL-RBUaWobQCpC_0uHbhtFKgBAXWIIedcHOkVJo3q6VrE3330OLk0LCklrTVUVwka5Yye9M142kSOBjwq-DxXMiDE28s9XEuqnX7rRm5dux86wLJcLTq4ojyGTgqD8zAT6td6Mfac60NN8CMw7YmL9A";          // chaîne chiffrée (clé maître orga, hors appli)
 const MARIES = ROSTER.filter(r => r.role === 'marie');
 
 /* Faux indices pour les curieux (jamais affichés en jeu) */
@@ -662,6 +671,7 @@ function renderLeaderboard(mountSel){
 
 /* ── KILL : initiation + réception de l'héritage ── */
 async function initiateKill(btn){
+  playSting('kill.mp4');   // sting plein écran (déclenché par le clic → son autorisé)
   const { push, set }=state.fb;
   btn.disabled=true; btn.textContent='⏳ En attente de confirmation…';
   const ref=push(pref('killClaims')); const id=ref.key;
@@ -953,6 +963,15 @@ function heartsRain(){ const rain=$('#rain'); const emo=['💍','❤️','🔪',
     rain.appendChild(d); setTimeout(()=>d.remove(),5500); } }
 let toastTimer=null;
 function toast(msg){ const t=$('#toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove('show'),3000); }
+let stingT=null;
+function playSting(src){
+  const ov=$('#sting'), v=$('#stingVid'); if(!ov||!v) return;
+  const hide=()=>{ ov.classList.remove('show'); try{ v.pause(); }catch(e){} v.removeAttribute('src'); try{ v.load(); }catch(e){} clearTimeout(stingT); };
+  v.src=src; ov.classList.add('show'); v.onended=hide; ov.onclick=hide;
+  try{ v.currentTime=0; }catch(e){}
+  const p=v.play(); if(p&&p.catch) p.catch(()=>{});
+  clearTimeout(stingT); stingT=setTimeout(hide, 13000);
+}
 
 /* ════════ Boot ════════ */
 document.querySelectorAll('[data-logo]').forEach(e=>e.addEventListener('click',bumpLogo));
