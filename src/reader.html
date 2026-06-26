@@ -83,6 +83,11 @@
     border:1px solid var(--gold-line); }
   .logo:active{transform:scale(.93)}
 
+  /* ── Bannière vidéo d'accueil ───────────────────────────────── */
+  .intro{ width:100%; aspect-ratio:16/9; object-fit:cover; display:block;
+    margin:0 auto 16px; border-radius:16px; border:1px solid var(--gold-line);
+    box-shadow:0 12px 34px rgba(36,28,46,.14); background:var(--ink); }
+
   /* ── Titres ───────────────────────────────────────────────── */
   h1{
     font-family:var(--serif); font-weight:500; color:var(--ink);
@@ -310,6 +315,7 @@
 
   <!-- ════════ Accueil ════════ -->
   <section id="accueil" class="screen">
+    <video class="intro" src="intro.mp4" poster="intro.jpg" autoplay muted loop playsinline preload="auto"></video>
     <div class="logo" data-logo>🔪💍</div>
     <h1>__TITLE__</h1>
     <p class="sub">__SUBTITLE__</p>
@@ -326,6 +332,7 @@
 
   <!-- ════════ Déverrouillage ════════ -->
   <section id="unlock" class="screen">
+    <video class="intro" src="intro.mp4" poster="intro.jpg" autoplay muted loop playsinline preload="auto"></video>
     <div class="logo" data-logo>🔪💍</div>
     <h1>Ton espace t'attend</h1>
     <p class="sub">entre ton code secret</p>
